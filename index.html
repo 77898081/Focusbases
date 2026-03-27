@@ -3046,7 +3046,7 @@ function askForNotificationPermission() {
       messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' })
         .then((token) => {
           if (token) {
-            console.log("Cihaz Tokenı:", token);
+            alert("Cihaz Tokenı (Hepsini Kopyala): " + token);
           }
         })
         .catch((err) => console.log('Token hatası:', err));
