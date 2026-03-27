@@ -3046,25 +3046,13 @@ function askForNotificationPermission() {
       messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' })
         .then((token) => {
           if (token) {
-            // Ekrana kopyalanabilir beyaz bir kutu ekliyoruz
-            const copyBox = document.createElement('textarea');
-            copyBox.value = token;
-            copyBox.style.width = '100%';
-            copyBox.style.height = '150px';
-            copyBox.style.position = 'fixed';
-            copyBox.style.top = '0';
-            copyBox.style.left = '0';
-            copyBox.style.zIndex = '10000';
-            copyBox.style.backgroundColor = 'white';
-            copyBox.style.color = 'black';
-            copyBox.style.fontSize = '14px';
-            copyBox.style.padding = '10px';
-            document.body.prepend(copyBox);
-            
-            alert("KOD GELDİ! En üstteki beyaz kutunun içine tıkla, hepsini seç ve kopyala.");
+            // Artık her şey arka planda sessizce halloluyor
+            console.log("Cihaz Tokenı başarıyla alındı.");
           }
         })
-        .catch((err) => console.log('Token hatası:', err));
+        .catch((err) => {
+          console.log("Token alınırken bir hata oluştu.", err);
+        });
     }
   });
 }
