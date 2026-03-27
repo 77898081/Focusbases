@@ -1,0 +1,2987 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#050a14" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FocusBase" />
+  <title>FocusBase</title>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html, body { height:100%; background:#050a14; }
+    #root { min-height:100dvh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback, createContext, useContext, useMemo } = React;
+
+// ─── STORAGE HOOK ─────────────────────────────────────────────────────────────
+const useLS = (key, init) => {
+  const [v, setV] = useState(() => {
+    try {
+      const s = localStorage.getItem(key);
+      return s !== null ? JSON.parse(s) : init;
+    } catch { return init; }
+  });
+  const set = useCallback(fn => {
+    setV(prev => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [key]);
+  return [v, set];
+};
+
+// ─── CONTEXT ──────────────────────────────────────────────────────────────────
+const AppCtx = createContext(null);
+const useApp = () => useContext(AppCtx);
+
+// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
+const LANG = {
+  tr: {
+    home:"Ana Sayfa", base:"Üs", focus:"Odak", habits:"Rutin", mind:"Zihin", settings:"Ayarlar",
+    baseTitle:"ÜS YÖNETİMİ", focusTitle:"ODAK SEANSI", habitsTitle:"GÜNLÜK RUTİN",
+    mindTitle:"ZİHİN ARENASI", settingsTitle:"AYARLAR",
+    build:"İnşa Et", stats:"İstatistik",
+    start:"BAŞLAT", cancel:"İPTAL", save:"KAYDET", close:"KAPAT",
+    breakTime:"MOLA", focusDur:"Odak Süresi", breakDur:"Mola Süresi",
+    addHabit:"+ EKLE", streakLabel:"STREAK", completedLabel:"TAMAMLANDI",
+    todayGame:"BUGÜNÜN OYUNU", otherDays:"DİĞER GÜNLER",
+    themeLabel:"Tema", langLabel:"Dil", darkLabel:"Karanlık", lightLabel:"Aydınlık",
+    soundLabel:"Ses Efektleri", vibLabel:"Titreşim",
+    dailyRem:"Günlük Hatırlatıcı", focusRem:"Odak Hatırlatması",
+    versionLabel:"Versiyon", clearData:"Verileri Sıfırla", appRating:"Uygulamayı Değerlendir",
+    goodMorning:"Günaydın", goodAfternoon:"İyi öğlenler", goodEvening:"İyi akşamlar",
+    rankLabel:"RÜTBE", levelLabel:"SEVİYE", xpLabel:"XP",
+    ranks:["Çaylak","Araştırmacı","Analist","Uzman","Mühendis","Stratejist","Usta","Mimarı","Elit","Danışman","Efsane","Tanrı Modu"],
+    moodQuestion:"Bugün nasıl hissediyorsun?",
+    moodLabels:["Yorgun","Normal","İyi","Harika","Yanıyorum"],
+    quickAccess:"HIZLI ERİŞİM", todayQuote:"GÜNÜN SÖZÜ",
+    newSession:"YENİ SEANS", exitBreak:"MOLADAN ÇIKIŞ",
+    sessionLabel:"SEANS", totalLabel:"TOPLAM dk", todayLabel:"BUGÜN dk",
+    comboLabel:"KOMBO", earnedLabel:"KAZANILDI",
+    presets:"HIZLI ÖNAYAR", timerSettings:"SÜRE AYARLARI",
+    breatheLabel:"NEFES", breatheIn:"Nefes al...", breatheHold:"Tut...", breatheOut:"Bırak...",
+    breatheClose:"Kapat",
+    sessionHistory:"SEANS GEÇMİŞİ", noHistory:"Henüz seans yok.",
+    streakDays:"GÜN ZİNCİR", habitActivity:"7 GÜNLÜK AKTİVİTE",
+    newHabitTitle:"YENİ ALIŞKANLIK", habitNamePH:"Alışkanlık adı...", habitDescPH:"Açıklama...",
+    iconLabel:"İKON", colorLabel:"RENK", editLabel:"DÜZENLE", deleteLabel:"SİL",
+    detailHint:"▸ detay",
+    allDoneLabel:"🎉 HEPSİ TAMAM!",
+    energyLabel:"ENERJİ", sizeLabel:"BOYUT", demolishLabel:"SÖK",
+    placingHint:"Haritada boş bir hücreye tıkla",
+    shopTitle:"YAPI MAĞAZASI", cancelPlacing:"İptal",
+    totalBuildings:"Toplam Yapı", netEnergy:"Net Enerji",
+    landUsage:"Arazi Doluluk", baseLevel:"Üs Seviyesi",
+    inventory:"YAPI ENVANTERİ",
+    playBtn:"OYNA →", playedLabel:"OYNANDI", laterLabel:"SONRA",
+    rewardLabel:"ÖDÜL", durLabel:"SÜRE", perDayLabel:"OYNANMA",
+    answerBtn:"CEVAPLA", answerPH:"Cevabını yaz...", attemptsLabel:"Deneme:",
+    memorizeHint:"KARTLARI EZBERLE! 👀", sequenceHint:"SIRAYI EZBERLE!",
+    waitingLabel:"BEKLİYOR…", tapLabel:"TAP!",
+    roundLabel:"TUR", correctLabel:"Doğru",
+    dangerZone:"⚠️ TEHLİKELİ BÖLGE", confirmDelete:"Tüm veriler silinecek. Geri alınamaz.",
+    deleteBtn:"SİL",
+    notificationsLabel:"BİLDİRİMLER", appearanceLabel:"GÖRÜNÜM", appLabel:"UYGULAMA",
+    feedbackLabel:"Geri Bildirim Gönder",
+    days:["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"],
+    version:"v3.0.0",
+  },
+  en: {
+    home:"Home", base:"Base", focus:"Focus", habits:"Habits", mind:"Mind", settings:"Settings",
+    baseTitle:"BASE MANAGEMENT", focusTitle:"FOCUS SESSION", habitsTitle:"DAILY ROUTINE",
+    mindTitle:"MIND ARENA", settingsTitle:"SETTINGS",
+    build:"Build", stats:"Stats",
+    start:"START", cancel:"CANCEL", save:"SAVE", close:"CLOSE",
+    breakTime:"BREAK", focusDur:"Focus Duration", breakDur:"Break Duration",
+    addHabit:"+ ADD", streakLabel:"STREAK", completedLabel:"COMPLETED",
+    todayGame:"TODAY'S GAME", otherDays:"OTHER DAYS",
+    themeLabel:"Theme", langLabel:"Language", darkLabel:"Dark", lightLabel:"Light",
+    soundLabel:"Sound Effects", vibLabel:"Vibration",
+    dailyRem:"Daily Reminder", focusRem:"Focus Reminder",
+    versionLabel:"Version", clearData:"Clear All Data", appRating:"Rate the App",
+    goodMorning:"Good morning", goodAfternoon:"Good afternoon", goodEvening:"Good evening",
+    rankLabel:"RANK", levelLabel:"LEVEL", xpLabel:"XP",
+    ranks:["Rookie","Scout","Analyst","Expert","Engineer","Strategist","Master","Architect","Elite","Consultant","Legend","God Mode"],
+    moodQuestion:"How are you feeling today?",
+    moodLabels:["Tired","Okay","Good","Great","On Fire"],
+    quickAccess:"QUICK ACCESS", todayQuote:"QUOTE OF THE DAY",
+    newSession:"NEW SESSION", exitBreak:"EXIT BREAK",
+    sessionLabel:"SESSIONS", totalLabel:"TOTAL min", todayLabel:"TODAY min",
+    comboLabel:"COMBO", earnedLabel:"EARNED",
+    presets:"QUICK PRESETS", timerSettings:"TIMER SETTINGS",
+    breatheLabel:"BREATHE", breatheIn:"Breathe in...", breatheHold:"Hold...", breatheOut:"Release...",
+    breatheClose:"Close",
+    sessionHistory:"SESSION HISTORY", noHistory:"No sessions yet.",
+    streakDays:"DAY STREAK", habitActivity:"7-DAY ACTIVITY",
+    newHabitTitle:"NEW HABIT", habitNamePH:"Habit name...", habitDescPH:"Description...",
+    iconLabel:"ICON", colorLabel:"COLOR", editLabel:"EDIT", deleteLabel:"DELETE",
+    detailHint:"▸ details",
+    allDoneLabel:"🎉 ALL DONE!",
+    energyLabel:"ENERGY", sizeLabel:"SIZE", demolishLabel:"DEMO",
+    placingHint:"Tap an empty cell on the map",
+    shopTitle:"STRUCTURE SHOP", cancelPlacing:"Cancel",
+    totalBuildings:"Total Buildings", netEnergy:"Net Energy",
+    landUsage:"Land Usage", baseLevel:"Base Level",
+    inventory:"BUILDING INVENTORY",
+    playBtn:"PLAY →", playedLabel:"PLAYED", laterLabel:"LATER",
+    rewardLabel:"REWARD", durLabel:"TIME", perDayLabel:"PER DAY",
+    answerBtn:"ANSWER", answerPH:"Type your answer...", attemptsLabel:"Attempts:",
+    memorizeHint:"MEMORIZE THE CARDS! 👀", sequenceHint:"MEMORIZE THE SEQUENCE!",
+    waitingLabel:"WAITING…", tapLabel:"TAP!",
+    roundLabel:"ROUND", correctLabel:"Correct",
+    dangerZone:"⚠️ DANGER ZONE", confirmDelete:"All data will be deleted. Cannot be undone.",
+    deleteBtn:"DELETE",
+    notificationsLabel:"NOTIFICATIONS", appearanceLabel:"APPEARANCE", appLabel:"APP",
+    feedbackLabel:"Send Feedback",
+    days:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+    version:"v3.0.0",
+  },
+};
+
+// ─── QUOTES ───────────────────────────────────────────────────────────────────
+const QUOTES_TR = [
+  { text:"Büyük şeyler, küçük adımların birikmesiyle inşa edilir.", author:"Carl Sagan" },
+  { text:"Zihin, odaklandığında evreni yeniden şekillendirir.", author:"Nikola Tesla" },
+  { text:"Disiplin, özgürlüğün en saf halidir.", author:"Jocko Willink" },
+  { text:"Her saniye, gelecekteki versiyonuna yapılan yatırımdır.", author:"FocusBase" },
+  { text:"Konsantrasyon; dağınık enerjinin lazer ışınına dönüşmesidir.", author:"Bruce Lee" },
+  { text:"İnsan, alışkanlıklarının mimarıdır.", author:"Aristoteles" },
+  { text:"Bugün yapmadığın şey, yarının borcudur.", author:"FocusBase" },
+  { text:"Başarı, her gün tekrarlanan küçük çabaların toplamıdır.", author:"Robert Collier" },
+];
+const QUOTES_EN = [
+  { text:"Great things are built by the accumulation of small steps.", author:"Carl Sagan" },
+  { text:"The mind, when focused, reshapes the universe.", author:"Nikola Tesla" },
+  { text:"Discipline is the purest form of freedom.", author:"Jocko Willink" },
+  { text:"Every second is an investment in your future self.", author:"FocusBase" },
+  { text:"Concentration is scattered energy becoming a laser beam.", author:"Bruce Lee" },
+  { text:"We are what we repeatedly do.", author:"Aristotle" },
+  { text:"What you don't do today becomes tomorrow's debt.", author:"FocusBase" },
+];
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+// effects per placed instance:
+//   focusBonus    → flat ⚡ added per focus session completion
+//   xpMultiplier  → fraction added to XP multiplier (0.15 = +15%)
+//   gameMultiplier→ fraction added to mind-game score payout
+//   habitBonus    → flat ⚡ added per habit tick
+//   energyLimit   → expands energy budget (allows more net-negative buildings)
+//   oxygenBonus   → wellness score shown on Home
+//   streakShield  → days streak is protected from breaking
+//   xpFlat        → flat XP added per focus session
+const STRUCTURES = [
+  {
+    id:"hq", name:"Komuta Merkezi", nameEn:"Command Center",
+    cost:0, w:2, h:2, emoji:"🏛️", color:"#00e5ff", energy:0, xp:0,
+    effects:{ focusBonus:5 },
+    effectDesc:"Her odak seansına +5⚡ baz bonus.",
+    effectDescEn:"Base +5⚡ per focus session.",
+  },
+  {
+    id:"solar", name:"Güneş Paneli", nameEn:"Solar Panel",
+    cost:30, w:1, h:1, emoji:"☀️", color:"#ffd700", energy:5, xp:10,
+    effects:{ energyLimit:15 },
+    effectDesc:"Enerji limiti +15 → daha fazla bina inşa edebilirsin.",
+    effectDescEn:"Energy limit +15 → build more structures.",
+  },
+  {
+    id:"tree", name:"Biyonik Ağaç", nameEn:"Bionic Tree",
+    cost:50, w:1, h:1, emoji:"🌳", color:"#22c55e", energy:3, xp:15,
+    effects:{ oxygenBonus:10, habitBonus:2, xpFlat:2 },
+    effectDesc:"Oksijen +10 · Alışkanlık başına +2⚡ · Seansa +2XP.",
+    effectDescEn:"Oxygen +10 · +2⚡/habit · +2XP/session.",
+  },
+  {
+    id:"server", name:"YZ Sunucu", nameEn:"AI Server",
+    cost:80, w:2, h:1, emoji:"🖥️", color:"#7c3aed", energy:-8, xp:20,
+    effects:{ xpMultiplier:0.15, gameMultiplier:0.10 },
+    effectDesc:"XP kazanımı +%15 · Oyun ödülü +%10.",
+    effectDescEn:"+15% XP gain · +10% game reward.",
+  },
+  {
+    id:"radar", name:"Radar Kulesi", nameEn:"Radar Tower",
+    cost:120, w:1, h:2, emoji:"📡", color:"#00ff88", energy:-3, xp:25,
+    effects:{ streakShield:1, focusBonus:3 },
+    effectDesc:"Streak kalkanı +1 gün · Seansa +3⚡.",
+    effectDescEn:"Streak shield +1 day · +3⚡/session.",
+  },
+  {
+    id:"greenhouse", name:"Sera Kompleksi", nameEn:"Greenhouse",
+    cost:150, w:2, h:1, emoji:"🌿", color:"#4ade80", energy:2, xp:30,
+    effects:{ habitBonus:3, oxygenBonus:15 },
+    effectDesc:"Alışkanlık başına +3⚡ · Oksijen +15.",
+    effectDescEn:"+3⚡ per habit · Oxygen +15.",
+  },
+  {
+    id:"lab", name:"Araştırma Lab", nameEn:"Research Lab",
+    cost:200, w:2, h:2, emoji:"🔬", color:"#f59e0b", energy:-10, xp:40,
+    effects:{ gameMultiplier:0.25, xpMultiplier:0.10 },
+    effectDesc:"Oyun ödülü +%25 · XP kazanımı +%10.",
+    effectDescEn:"+25% game reward · +10% XP gain.",
+  },
+  {
+    id:"reactor", name:"Enerji Reaktörü", nameEn:"Energy Reactor",
+    cost:320, w:2, h:1, emoji:"⚡", color:"#ff6b35", energy:20, xp:60,
+    effects:{ focusBonus:15, energyLimit:30, xpFlat:5 },
+    effectDesc:"Seansa +15⚡ · Enerji limiti +30 · Seansa +5XP.",
+    effectDescEn:"+15⚡/session · Energy limit +30 · +5XP/session.",
+  },
+  {
+    id:"satellite", name:"Uydu İstasyonu", nameEn:"Satellite Station",
+    cost:500, w:1, h:2, emoji:"🛰️", color:"#a78bfa", energy:-5, xp:80,
+    effects:{ xpMultiplier:0.20, gameMultiplier:0.20, focusBonus:10 },
+    effectDesc:"XP +%20 · Oyun ödülü +%20 · Seansa +10⚡.",
+    effectDescEn:"+20% XP · +20% game reward · +10⚡/session.",
+  },
+  {
+    id:"fountain", name:"Veri Çeşmesi", nameEn:"Data Fountain",
+    cost:80, w:1, h:1, emoji:"⛲", color:"#38bdf8", energy:0, xp:12,
+    effects:{ oxygenBonus:8, xpFlat:1 },
+    effectDesc:"Oksijen +8 · Her seansa +1XP.",
+    effectDescEn:"Oxygen +8 · +1XP per session.",
+  },
+];
+
+// ─── BASE EFFECTS CALCULATOR ──────────────────────────────────────────────────
+function calcBaseEffects(placed) {
+  const t = { focusBonus:0, xpMultiplier:0, gameMultiplier:0, habitBonus:0, energyLimit:0, oxygenBonus:0, streakShield:0, xpFlat:0 };
+  placed.forEach(p => {
+    const st = STRUCTURES.find(x => x.id === p.structId);
+    if (!st || !st.effects) return;
+    Object.keys(st.effects).forEach(k => { t[k] = (t[k] || 0) + st.effects[k]; });
+  });
+  return t;
+}
+const GRID_COLS = 6;
+const GRID_ROWS = 8;
+
+const DAILY_GAMES = [
+  { id:"memory",   nameTr:"Hafıza Matrisi",  nameEn:"Memory Matrix",  icon:"🧩", color:"#7c3aed", desc:"Kartları eşleştir" },
+  { id:"math",     nameTr:"Hızlı Hesap",     nameEn:"Speed Math",     icon:"🧮", color:"#00c87a", desc:"Zihin matematiği" },
+  { id:"reaction", nameTr:"Refleks Testi",   nameEn:"Reaction Test",  icon:"⚡", color:"#ff6b35", desc:"Hız sınırını zorla" },
+  { id:"pattern",  nameTr:"Örüntü Bul",      nameEn:"Pattern Hunt",   icon:"🎯", color:"#f59e0b", desc:"Farklı olanı seç" },
+  { id:"sequence", nameTr:"Dizi Takibi",     nameEn:"Sequence Chase", icon:"🔢", color:"#0070ff", desc:"Sırayı hatırla" },
+  { id:"color",    nameTr:"Renk Hafızası",   nameEn:"Color Memory",   icon:"🎨", color:"#ec4899", desc:"Renk sırasını ezberle" },
+  { id:"word",     nameTr:"Kelime Avı",      nameEn:"Word Hunt",      icon:"📝", color:"#14b8a6", desc:"Gizli kelimeyi bul" },
+];
+
+const DEFAULT_HABITS = [
+  { id:"water",    label:"Su içtim (2L)",       labelEn:"Drank water (2L)",    icon:"💧", color:"#0ea5e9", target:"Günlük 2 litre su. Konsantrasyonu artırır." },
+  { id:"walk",     label:"30 dk yürüdüm",        labelEn:"Walked 30 min",       icon:"🚶", color:"#22c55e", target:"Yürüyüş beyni oksijenlendirir." },
+  { id:"read",     label:"Kitap okudum",          labelEn:"Read a book",         icon:"📚", color:"#f59e0b", target:"Günde 20 sayfa. Bilgi ve konsantrasyon." },
+  { id:"meditate", label:"Meditasyon (10dk)",     labelEn:"Meditated (10min)",   icon:"🧘", color:"#a78bfa", target:"10 dk nefes egzersizi. Zihin sakinleşir." },
+  { id:"noPhone",  label:"Telefonsuz 1 saat",     labelEn:"Phone-free 1 hour",   icon:"📵", color:"#ec4899", target:"Dikkat dağıtıcılardan uzak 1 saat." },
+];
+
+const WORDS = ["ODAK","ZIHIN","ENERJI","GOREV","BASARI","HEDEF","ZAMAN","KONSANTRE"];
+
+// ─── THEMES ───────────────────────────────────────────────────────────────────
+const DARK = {
+  bg:"#050a14", surface:"rgba(255,255,255,0.03)", border:"rgba(255,255,255,0.08)",
+  text:"rgba(255,255,255,0.88)", textMuted:"rgba(255,255,255,0.45)", textDim:"rgba(255,255,255,0.22)",
+  navBg:"rgba(5,10,20,0.97)", accent:"#00e5ff", inputBg:"rgba(0,0,0,0.3)", inputBorder:"rgba(255,255,255,0.12)",
+};
+const LIGHT = {
+  bg:"#eef2ff", surface:"rgba(0,0,0,0.04)", border:"rgba(0,0,0,0.09)",
+  text:"rgba(5,15,40,0.88)", textMuted:"rgba(5,15,40,0.5)", textDim:"rgba(5,15,40,0.28)",
+  navBg:"rgba(238,242,255,0.97)", accent:"#1d4ed8", inputBg:"rgba(255,255,255,0.8)", inputBorder:"rgba(0,0,0,0.15)",
+};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const orb = { fontFamily:"'Orbitron',sans-serif" };
+function card(T, extra = {}) {
+  return { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, ...extra };
+}
+function glowCard(color, T, extra = {}) {
+  return { background: `${color}12`, border: `1px solid ${color}30`, borderRadius: 16, boxShadow: `0 0 24px ${color}10`, ...extra };
+}
+function btn(color, extra = {}) {
+  return {
+    background: `linear-gradient(135deg, ${color}, ${color}bb)`,
+    border: "none", borderRadius: 12, cursor: "pointer",
+    fontFamily: "'Orbitron',sans-serif", color: "#050a14",
+    fontWeight: 700, letterSpacing: 1.5, transition: "all 0.2s",
+    boxShadow: `0 0 18px ${color}35`,
+    ...extra,
+  };
+}
+
+// ─── GAME RESULT SCREEN (top-level component) ─────────────────────────────────
+function GameResult({ score, max, color, label, lang, gameMult = 0, xpMult = 0, xpFlatBonus = 0 }) {
+  const quotes = lang === "tr" ? QUOTES_TR : QUOTES_EN;
+  const q = quotes[Math.floor(Math.random() * quotes.length)];
+  const star = score >= max * 0.8 ? "🏆" : score >= max * 0.5 ? "⭐" : "💡";
+  const finalPts = Math.floor((20 + score) * (1 + gameMult));
+  const finalXP = Math.floor((10 + score / 2) * (1 + xpMult)) + xpFlatBonus;
+  return (
+    <div style={{ textAlign: "center", padding: "24px 0" }}>
+      <div style={{ fontSize: 64, marginBottom: 12 }}>{star}</div>
+      <div style={{ ...orb, fontSize: 52, color, marginBottom: 4 }}>{score}</div>
+      <div style={{ ...orb, fontSize: 11, color: "rgba(255,255,255,0.5)", letterSpacing: 2, marginBottom: 12 }}>{label}</div>
+      <div style={{ ...orb, fontSize: 12, color: "#00ff88", marginTop: 8 }}>+{finalPts}⚡ +{finalXP}XP{gameMult > 0 ? ` (🔬 +${Math.round(gameMult*100)}%)` : ""}</div>
+      <div style={{ background: `${color}18`, borderRadius: 8, height: 6, margin: "16px 0", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${Math.min(100, (score / max) * 100)}%`, background: `linear-gradient(90deg,${color},${color}88)`, borderRadius: 8 }} />
+      </div>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", fontStyle: "italic", lineHeight: 1.7, marginTop: 16 }}>"{q.text}"</p>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOME SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+function HomeScreen({ setScreen }) {
+  const { T, t, lang, points, xp, level, levelProgress, levelXP, nextXP, XP_THRESHOLDS, sessions, streak, mood, setMood, baseEffects } = useApp();
+  const bfx = baseEffects || {};
+  const RANK_COLORS = ["#94a3b8","#38bdf8","#00e5ff","#00ff88","#ffd700","#ff6b35","#a78bfa","#ec4899","#ff4444","#ffd700","#ffffff","#00e5ff"];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? t.goodMorning : hour < 18 ? t.goodAfternoon : t.goodEvening;
+  const quotes = lang === "tr" ? QUOTES_TR : QUOTES_EN;
+  const todayQ = quotes[new Date().getDate() % quotes.length];
+  const moodColors = ["#5eead4","#94a3b8","#22c55e","#fbbf24","#ff6b35"];
+  const rankC = RANK_COLORS ? RANK_COLORS[Math.min(level, RANK_COLORS.length-1)] : T.accent;
+  const nextRank = t.ranks[Math.min(level+1, t.ranks.length-1)];
+
+  return (
+    <div style={{ padding: "16px 16px 100px", animation: "slideUp 0.4s ease" }}>
+      {/* Date + Greeting */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ ...orb, fontSize: 10, color: T.textDim, letterSpacing: 2 }}>
+          {new Date().toLocaleDateString(lang === "tr" ? "tr-TR" : "en-US", { weekday:"long", day:"numeric", month:"long" }).toUpperCase()}
+        </p>
+        <h1 style={{ ...orb, fontSize: 22, color: T.text, letterSpacing: 1, marginTop: 4 }}>{greeting} 👋</h1>
+      </div>
+
+      {/* Level Card */}
+      <div style={{ ...glowCard(T.accent, T, { padding: 18, marginBottom: 14 }) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div>
+            <div style={{ ...orb, fontSize: 10, color: T.textMuted, letterSpacing: 2 }}>{t.rankLabel}</div>
+            <div style={{ ...orb, fontSize: 18, color: rankC, marginTop: 3 }}>{t.ranks[Math.min(level, t.ranks.length-1)]}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ ...orb, fontSize: 10, color: T.textMuted, letterSpacing: 2 }}>{t.levelLabel}</div>
+            <div style={{ ...orb, fontSize: 30, color: rankC, lineHeight: 1 }}>{level}</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ ...orb, fontSize: 9, color: T.textDim }}>{xp} / {nextXP} XP</span>
+          <span style={{ ...orb, fontSize: 9, color: rankC }}>{Math.round(levelProgress*100)}%</span>
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, height: 8, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${Math.round(levelProgress*100)}%`, background: `linear-gradient(90deg,${rankC},${rankC}88)`, borderRadius: 8, transition: "width 0.8s ease", boxShadow: `0 0 10px ${rankC}50` }} />
+        </div>
+        {level < t.ranks.length-1 && <div style={{ ...orb, fontSize:8, color:T.textDim, marginTop:6, textAlign:"center" }}>Sonraki rütbe: <span style={{ color:rankC }}>{nextRank}</span> · {nextXP-xp} XP kaldı</div>}
+      </div>
+
+      {/* Mood */}
+      <div style={{ ...card(T, { padding: "14px 16px", marginBottom: 14 }) }}>
+        <div style={{ ...orb, fontSize: 9, color: T.textDim, letterSpacing: 2, marginBottom: 10 }}>{t.moodQuestion}</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {["😴","😐","🙂","😊","🔥"].map((emoji, i) => (
+            <button key={i} onClick={() => setMood(i)} style={{
+              flex: 1, padding: "10px 2px", borderRadius: 12, border: "none", cursor: "pointer",
+              background: mood === i ? `${moodColors[i]}22` : "rgba(255,255,255,0.03)",
+              outline: mood === i ? `1px solid ${moodColors[i]}60` : "1px solid transparent",
+              transition: "all 0.2s",
+            }}>
+              <div style={{ fontSize: 22 }}>{emoji}</div>
+              <div style={{ ...orb, fontSize: 7, color: T.textDim, marginTop: 4 }}>{t.moodLabels[i]}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        {[
+          { label: t.sessionLabel, value: sessions, icon: "🎯", color: "#00e5ff" },
+          { label: t.streakLabel,  value: streak,   icon: "🔥", color: "#ff6b35" },
+          { label: t.xpLabel,      value: xp,       icon: "⚡", color: "#ffd700" },
+        ].map(item => (
+          <div key={item.label} style={{ flex: 1, ...card(T, { padding: "12px 6px", textAlign: "center" }) }}>
+            <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
+            <div style={{ ...orb, fontSize: 16, color: item.color }}>{item.value}</div>
+            <div style={{ ...orb, fontSize: 8, color: T.textDim, letterSpacing: 1, marginTop: 2 }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Access */}
+      <div style={{ ...orb, fontSize: 9, color: T.textDim, letterSpacing: 2, marginBottom: 10 }}>{t.quickAccess}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+        {[
+          { icon:"⏱️", label:t.focus,   screen:"focus",   color:"#00e5ff" },
+          { icon:"✅", label:t.habits,  screen:"habits",  color:"#00ff88" },
+          { icon:"🧠", label:t.mind,    screen:"mind",    color:"#a78bfa" },
+          { icon:"🏛️", label:t.base,    screen:"base",    color:"#ffd700" },
+        ].map(c => (
+          <button key={c.screen} onClick={() => setScreen(c.screen)} style={{
+            ...glowCard(c.color, T, { padding: "18px 14px", cursor: "pointer", textAlign: "left", transition: "all 0.2s" })
+          }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>{c.icon}</div>
+            <div style={{ ...orb, fontSize: 13, color: c.color, letterSpacing: 1 }}>{c.label}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Quote */}
+      <div style={{ background: "linear-gradient(135deg,rgba(167,139,250,0.1),rgba(124,58,237,0.05))", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 16, padding: 18 }}>
+        <div style={{ ...orb, fontSize: 9, color: "rgba(167,139,250,0.6)", letterSpacing: 2, marginBottom: 10 }}>{t.todayQuote}</div>
+        <p style={{ fontSize: 14, color: T.text, lineHeight: 1.7, fontStyle: "italic" }}>"{todayQ.text}"</p>
+        <p style={{ ...orb, fontSize: 11, color: "rgba(167,139,250,0.8)", marginTop: 8 }}>— {todayQ.author}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BASE SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+function BaseScreen() {
+  const { T, t, lang, points, setPoints, addXP } = useApp();
+  const { placedGlobal: placed, setPlacedGlobal: setPlaced, baseEffects } = useApp();
+  // (placed/setPlaced now come from global context so all screens see effects)
+  const [selStruct, setSelStruct] = useState(null);
+  const [placing, setPlacing] = useState(false);
+  const [hover, setHover] = useState(null);
+  const [infoP, setInfoP] = useState(null);
+  const [tab, setTab] = useState("build");
+  const [toast, setToast] = useState(null);
+
+  const totalE = placed.reduce((s, p) => {
+    const st = STRUCTURES.find(x => x.id === p.structId);
+    return s + (st ? st.energy : 0);
+  }, 0);
+
+  function isOcc(c, r, excl) {
+    return placed.some(p => {
+      if (p.id === excl) return false;
+      const st = STRUCTURES.find(x => x.id === p.structId);
+      if (!st) return false;
+      return c >= p.col && c < p.col + st.w && r >= p.row && r < p.row + st.h;
+    });
+  }
+
+  function canPlace(sid, c, r) {
+    const st = STRUCTURES.find(x => x.id === sid);
+    if (!st) return false;
+    if (c + st.w > GRID_COLS || r + st.h > GRID_ROWS) return false;
+    for (let cc = c; cc < c + st.w; cc++)
+      for (let rr = r; rr < r + st.h; rr++)
+        if (isOcc(cc, rr)) return false;
+    return true;
+  }
+
+  function handleCell(c, r) {
+    if (placing && selStruct) {
+      if (canPlace(selStruct, c, r)) {
+        const st = STRUCTURES.find(x => x.id === selStruct);
+        if (points >= st.cost) {
+          setPoints(p => p - st.cost);
+          addXP(st.xp);
+          setPlaced(prev => [...prev, { id: `${selStruct}_${Date.now()}`, structId: selStruct, col: c, row: r }]);
+          setPlacing(false);
+          setSelStruct(null);
+          setToast(`${st.emoji} ${lang === "tr" ? st.name : st.nameEn} +${st.xp}XP`);
+          setTimeout(() => setToast(null), 2500);
+        }
+      }
+    } else {
+      const p = placed.find(p => {
+        const st = STRUCTURES.find(x => x.id === p.structId);
+        return c >= p.col && c < p.col + st.w && r >= p.row && r < p.row + st.h;
+      });
+      setInfoP(p || null);
+    }
+  }
+
+  function demolish(pid) {
+    const p = placed.find(x => x.id === pid);
+    if (!p || p.structId === "hq") return;
+    const st = STRUCTURES.find(x => x.id === p.structId);
+    setPoints(pt => pt + Math.floor(st.cost * 0.5));
+    setPlaced(prev => prev.filter(x => x.id !== pid));
+    setInfoP(null);
+  }
+
+  const cellPx = Math.floor(Math.min(340, (typeof window !== "undefined" ? window.innerWidth : 390) - 32) / GRID_COLS);
+
+  return (
+    <div style={{ padding: "16px 16px 100px" }}>
+      {toast && (
+        <div style={{ position:"fixed", top:60, left:"50%", transform:"translateX(-50%)", zIndex:999,
+          background:"linear-gradient(135deg,#00e5ff,#0070ff)", borderRadius:20, padding:"12px 24px",
+          ...orb, fontSize:12, color:"#050a14", fontWeight:700, boxShadow:"0 0 40px rgba(0,229,255,0.5)",
+          animation:"slideDown 0.3s ease", whiteSpace:"nowrap" }}>
+          {toast}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+        <div>
+          <h2 style={{ ...orb, fontSize:16, color:T.accent, letterSpacing:2 }}>{t.baseTitle}</h2>
+          <div style={{ ...orb, fontSize:9, color:T.textDim, marginTop:2 }}>
+            {new Date().getHours() < 12 ? "☀️ Gündüz" : new Date().getHours() < 18 ? "🌤️ Öğleden Sonra" : "🌙 Gece"}
+          </div>
+        </div>
+        <div style={{ ...glowCard(totalE >= 0 ? "#ffd700" : "#ff6b6b", T, { padding:"6px 14px", display:"flex", alignItems:"center", gap:6 }) }}>
+          <span style={{ ...orb, fontSize:14, color:totalE >= 0 ? "#ffd700" : "#ff6b6b" }}>{totalE >= 0 ? "+" : ""}{totalE}⚡</span>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+        {[["build", t.build], ["stats", t.stats]].map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} style={{
+            flex:1, padding:"9px 0", borderRadius:10, cursor:"pointer",
+            background: tab === id ? `linear-gradient(135deg,${T.accent},${T.accent}88)` : "rgba(255,255,255,0.04)",
+            border: tab === id ? "none" : `1px solid ${T.border}`,
+            color: tab === id ? "#050a14" : T.textMuted,
+            ...orb, fontSize:11, letterSpacing:1,
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {tab === "build" && (
+        <>
+          {/* Grid */}
+          <div style={{
+            position:"relative", width:cellPx * GRID_COLS, height:cellPx * GRID_ROWS,
+            margin:"0 auto 14px", borderRadius:16, overflow:"hidden",
+            background: T.bg === "#050a14" ? "linear-gradient(160deg,#0a1628,#050d1e)" : "linear-gradient(160deg,#dbeafe,#e0f2fe)",
+            border:`1px solid ${T.accent}22`,
+          }}>
+            {/* Grid lines */}
+            <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:0.12, pointerEvents:"none" }}>
+              {Array.from({ length: GRID_COLS + 1 }).map((_, i) => (
+                <line key={"v"+i} x1={i*cellPx} y1={0} x2={i*cellPx} y2={cellPx*GRID_ROWS} stroke={T.accent} strokeWidth={0.5} />
+              ))}
+              {Array.from({ length: GRID_ROWS + 1 }).map((_, i) => (
+                <line key={"h"+i} x1={0} y1={i*cellPx} x2={cellPx*GRID_COLS} y2={i*cellPx} stroke={T.accent} strokeWidth={0.5} />
+              ))}
+            </svg>
+            {/* Empty cells */}
+            {Array.from({ length: GRID_COLS * GRID_ROWS }).map((_, idx) => {
+              const c = idx % GRID_COLS;
+              const r = Math.floor(idx / GRID_COLS);
+              if (isOcc(c, r)) return null;
+              const canP = placing && selStruct && canPlace(selStruct, c, r);
+              const isHov = hover && hover.c === c && hover.r === r;
+              return (
+                <div key={idx}
+                  onClick={() => handleCell(c, r)}
+                  onMouseEnter={() => setHover({ c, r })}
+                  onMouseLeave={() => setHover(null)}
+                  style={{
+                    position:"absolute", left:c*cellPx, top:r*cellPx, width:cellPx, height:cellPx,
+                    cursor: placing ? (canP ? "crosshair" : "not-allowed") : "default",
+                    background: placing && isHov && canP ? "rgba(0,229,255,0.18)" : "transparent",
+                    transition:"background 0.1s",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                  }}>
+                  {!placing && <div style={{ width:2, height:2, borderRadius:"50%", background:`${T.accent}28` }} />}
+                  {placing && canP && isHov && (
+                    <div style={{ fontSize:cellPx * 0.45, opacity:0.55 }}>
+                      {STRUCTURES.find(x => x.id === selStruct)?.emoji}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {/* Placed structures */}
+            {placed.map(p => {
+              const st = STRUCTURES.find(x => x.id === p.structId);
+              if (!st) return null;
+              const sel = infoP && infoP.id === p.id;
+              return (
+                <div key={p.id} onClick={() => handleCell(p.col, p.row)} style={{
+                  position:"absolute", left:p.col*cellPx, top:p.row*cellPx,
+                  width:st.w*cellPx, height:st.h*cellPx,
+                  background:`linear-gradient(135deg,${st.color}22,${st.color}08)`,
+                  border:`${sel ? 2 : 1}px solid ${sel ? st.color : st.color + "55"}`,
+                  borderRadius:8, cursor:"pointer",
+                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                  boxShadow: sel ? `0 0 22px ${st.color}55` : `0 0 8px ${st.color}18`,
+                  transition:"all 0.2s", zIndex: sel ? 2 : 1,
+                }}>
+                  <span style={{ fontSize:Math.min(st.w, st.h)*cellPx*0.42, filter:`drop-shadow(0 0 5px ${st.color})` }}>{st.emoji}</span>
+                  {st.w >= 2 && (
+                    <span style={{ ...orb, fontSize:6.5, color:st.color, marginTop:2, textAlign:"center", padding:"0 3px", letterSpacing:0.3 }}>
+                      {(lang === "tr" ? st.name : st.nameEn).slice(0, 14)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Info Panel */}
+          {infoP && (() => {
+            const st = STRUCTURES.find(x => x.id === infoP.structId);
+            return (
+              <div style={{ ...glowCard(st.color, T, { padding:16, marginBottom:12 }) }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                    <span style={{ fontSize:30 }}>{st.emoji}</span>
+                    <div>
+                      <div style={{ ...orb, fontSize:12, color:st.color }}>{lang === "tr" ? st.name : st.nameEn}</div>
+                      {st.effectDesc && <div style={{ fontSize:10, color:T.accent, marginTop:4, opacity:0.8 }}>✦ {lang === "tr" ? st.effectDesc : st.effectDescEn}</div>}
+                    </div>
+                  </div>
+                  <button onClick={() => setInfoP(null)} style={{ background:"none", border:"none", color:T.textDim, fontSize:20, cursor:"pointer" }}>×</button>
+                </div>
+                <div style={{ display:"flex", gap:8, marginTop:12 }}>
+                  <div style={{ flex:1, ...card(T, { padding:"8px", textAlign:"center" }) }}>
+                    <div style={{ ...orb, fontSize:9, color:T.textDim }}>{t.energyLabel}</div>
+                    <div style={{ ...orb, fontSize:15, color:st.energy >= 0 ? "#00ff88" : "#ff6b6b", marginTop:2 }}>
+                      {st.energy >= 0 ? "+" : ""}{st.energy}
+                    </div>
+                  </div>
+                  <div style={{ flex:1, ...card(T, { padding:"8px", textAlign:"center" }) }}>
+                    <div style={{ ...orb, fontSize:9, color:T.textDim }}>{t.sizeLabel}</div>
+                    <div style={{ ...orb, fontSize:15, color:T.text, marginTop:2 }}>{st.w}×{st.h}</div>
+                  </div>
+                  {infoP.structId !== "hq" && (
+                    <button onClick={() => demolish(infoP.id)} style={{
+                      ...card(T, { padding:"8px 12px", cursor:"pointer", border:"1px solid rgba(255,80,80,0.3)",
+                        background:"rgba(255,50,50,0.08)", color:"rgba(255,100,100,0.7)", ...orb, fontSize:9 })
+                    }}>🗑️ {t.demolishLabel}<br/>+{Math.floor(st.cost*0.5)}⚡</button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Shop / Placing mode */}
+          {placing ? (
+            <div style={{ ...glowCard("#ff6b35", T, { padding:14, display:"flex", justifyContent:"space-between", alignItems:"center" }) }}>
+              <span style={{ ...orb, fontSize:11, color:"#ff6b35", letterSpacing:1 }}>📍 {t.placingHint}</span>
+              <button onClick={() => { setPlacing(false); setSelStruct(null); }} style={{
+                background:"rgba(255,50,50,0.15)", border:"1px solid rgba(255,50,50,0.3)", borderRadius:8,
+                padding:"6px 12px", color:"rgba(255,100,100,0.8)", cursor:"pointer", ...orb, fontSize:9,
+              }}>{t.cancelPlacing}</button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:10 }}>{t.shopTitle}</div>
+              {STRUCTURES.filter(s => s.id !== "hq").map(st => {
+                const aff = points >= st.cost;
+                const cnt = placed.filter(p => p.structId === st.id).length;
+                return (
+                  <div key={st.id} style={{ ...card(T, { padding:"12px 14px", display:"flex", alignItems:"center", gap:12, marginBottom:8, opacity:aff ? 1 : 0.5 }) }}>
+                    <span style={{ fontSize:26, filter:`drop-shadow(0 0 5px ${st.color}80)` }}>{st.emoji}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ ...orb, fontSize:11, color:st.color }}>{lang === "tr" ? st.name : st.nameEn}</span>
+                        <span style={{ ...orb, fontSize:9, color:T.textDim }}>×{cnt}</span>
+                      </div>
+                      <div style={{ ...orb, fontSize:9, color:st.energy >= 0 ? "#00ff88" : "#ff6b6b", marginTop:4 }}>
+                        {st.energy >= 0 ? "+" : ""}{st.energy}⚡ · +{st.xp}XP
+                      </div>
+                      {st.effectDesc && (
+                        <div style={{ fontSize:9, color:T.accent, marginTop:3, opacity:0.75, lineHeight:1.4 }}>
+                          ✦ {lang === "tr" ? st.effectDesc : st.effectDescEn}
+                        </div>
+                      )}
+                    </div>
+                    <button disabled={!aff} onClick={() => { setSelStruct(st.id); setPlacing(true); setInfoP(null); }} style={{
+                      ...btn(aff ? st.color : "#555", { padding:"9px 12px", fontSize:10, borderRadius:10, opacity:aff ? 1 : 0.5, cursor:aff ? "pointer" : "not-allowed" })
+                    }}>⚡{st.cost}</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === "stats" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {[
+            { label:t.totalBuildings, value:placed.length, icon:"🏗️", color:"#00e5ff" },
+            { label:t.netEnergy, value:`${totalE >= 0 ? "+" : ""}${totalE}`, icon:"⚡", color:totalE >= 0 ? "#ffd700" : "#ff6b6b" },
+            { label:t.landUsage, value:`%${Math.round((placed.reduce((a, p) => { const st = STRUCTURES.find(x => x.id === p.structId); return a + st.w * st.h; }, 0) / (GRID_COLS * GRID_ROWS)) * 100)}`, icon:"🗺️", color:"#00ff88" },
+          ].map(item => (
+            <div key={item.label} style={{ ...glowCard(item.color, T, { padding:"16px 18px", display:"flex", justifyContent:"space-between", alignItems:"center" }) }}>
+              <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                <span style={{ fontSize:26 }}>{item.icon}</span>
+                <span style={{ ...orb, fontSize:12, color:T.textMuted, letterSpacing:1 }}>{item.label}</span>
+              </div>
+              <span style={{ ...orb, fontSize:24, color:item.color }}>{item.value}</span>
+            </div>
+          ))}
+          <div style={{ ...card(T, { padding:16, marginBottom:10 }) }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>{t.inventory}</div>
+            {STRUCTURES.map(st => {
+              const cnt = placed.filter(p => p.structId === st.id).length;
+              if (!cnt) return null;
+              return (
+                <div key={st.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <span style={{ fontSize:18 }}>{st.emoji}</span>
+                    <span style={{ fontSize:12, color:st.color }}>{lang === "tr" ? st.name : st.nameEn}</span>
+                  </div>
+                  <span style={{ ...orb, fontSize:12, color:T.textMuted }}>×{cnt}</span>
+                </div>
+              );
+            })}
+          </div>
+          {/* Active Effects Summary */}
+          <div style={{ background:"rgba(0,229,255,0.06)", border:"1px solid rgba(0,229,255,0.2)", borderRadius:16, padding:16 }}>
+            <div style={{ ...orb, fontSize:9, color:"#00e5ff", letterSpacing:2, marginBottom:12 }}>⚡ AKTİF EFEKTLER</div>
+            {[
+              baseEffects.focusBonus > 0    && { icon:"⏱️", label:"Seans Bonusu",    value:`+${baseEffects.focusBonus}⚡/seans`,    color:"#00e5ff" },
+              baseEffects.xpMultiplier > 0  && { icon:"🧬", label:"XP Çarpanı",     value:`+${Math.round(baseEffects.xpMultiplier*100)}%`,        color:"#7c3aed" },
+              baseEffects.gameMultiplier > 0&& { icon:"🔬", label:"Oyun Ödülü",     value:`+${Math.round(baseEffects.gameMultiplier*100)}%`,       color:"#f59e0b" },
+              baseEffects.habitBonus > 0    && { icon:"✅", label:"Alışkanlık Bon.", value:`+${baseEffects.habitBonus}⚡/alışkanlık`, color:"#00ff88" },
+              baseEffects.xpFlat > 0        && { icon:"⭐", label:"Sabit XP",       value:`+${baseEffects.xpFlat}XP/seans`,          color:"#ffd700" },
+              baseEffects.oxygenBonus > 0   && { icon:"🌳", label:"Oksijen",        value:`+${baseEffects.oxygenBonus}`,               color:"#22c55e" },
+              baseEffects.streakShield > 0  && { icon:"📡", label:"Streak Kalkanı", value:`${baseEffects.streakShield} gün`,           color:"#00ff88" },
+              baseEffects.energyLimit > 0   && { icon:"☀️", label:"Enerji Limiti",  value:`+${baseEffects.energyLimit}`,               color:"#ffd700" },
+            ].filter(Boolean).map(item => (
+              <div key={item.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:`1px solid rgba(255,255,255,0.05)` }}>
+                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                  <span style={{ fontSize:16 }}>{item.icon}</span>
+                  <span style={{ fontSize:11, color:T.textMuted }}>{item.label}</span>
+                </div>
+                <span style={{ ...orb, fontSize:11, color:item.color, fontWeight:700 }}>{item.value}</span>
+              </div>
+            ))}
+            {Object.values(baseEffects).every(v => v === 0) && (
+              <p style={{ fontSize:11, color:T.textDim, textAlign:"center", padding:"8px 0" }}>Henüz aktif efekt yok. Yapı inşa et!</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOCUS SCREEN  —  Sade Pomodoro, aktivite bazlı
+   ═══════════════════════════════════════════════════════════════ */
+
+const ACTIVITIES = [
+  { id:"study",    label:"Ders",         labelEn:"Study",     icon:"📚", color:"#00e5ff" },
+  { id:"work",     label:"İş / Proje",   labelEn:"Work",      icon:"💼", color:"#7c3aed" },
+  { id:"reading",  label:"Okuma",        labelEn:"Reading",   icon:"📖", color:"#f59e0b" },
+  { id:"coding",   label:"Kod",          labelEn:"Coding",    icon:"💻", color:"#00ff88" },
+  { id:"writing",  label:"Yazı",         labelEn:"Writing",   icon:"✍️", color:"#ec4899" },
+  { id:"language", label:"Dil",          labelEn:"Language",  icon:"🌍", color:"#38bdf8" },
+  { id:"research", label:"Araştırma",    labelEn:"Research",  icon:"🔬", color:"#ff6b35" },
+  { id:"creative", label:"Yaratıcı",     labelEn:"Creative",  icon:"🎨", color:"#a78bfa" },
+  { id:"exercise", label:"Egzersiz",     labelEn:"Exercise",  icon:"🏃", color:"#22c55e" },
+  { id:"planning", label:"Planlama",     labelEn:"Planning",  icon:"🗓️", color:"#ffd700" },
+  { id:"other",    label:"Diğer",        labelEn:"Other",     icon:"⚡", color:"#94a3b8" },
+];
+
+// Preset modlar — süre + mola bilgisi
+const FOCUS_PRESETS = [
+  { id:"sprint",   label:"Kısa Sprint",  work:15, brk:3,  icon:"⚡", color:"#00e5ff",  desc:"Hızlı & yoğun" },
+  { id:"pomodoro", label:"Pomodoro",     work:25, brk:5,  icon:"🍅", color:"#ff4444",  desc:"Klasik 25/5" },
+  { id:"deep",     label:"Derin Odak",   work:50, brk:10, icon:"🔥", color:"#ff6b35",  desc:"Kesintisiz" },
+  { id:"marathon", label:"Maraton",      work:90, brk:20, icon:"🏃", color:"#22c55e",  desc:"Uzun soluklu" },
+  { id:"custom",   label:"Özel",         work:0,  brk:0,  icon:"⚙️", color:"#a78bfa",  desc:"Sen ayarla" },
+];
+
+function FocusScreen() {
+  const { T, t, lang, addPoints, addXP, baseEffects } = useApp();
+  const bfx = baseEffects || {};
+
+  const [workMin, setWorkMin]     = useLS("fb_workMin", 25);
+  const [breakMin, setBreakMin]   = useLS("fb_breakMin", 5);
+  const [sessions, setSessions]   = useLS("fb_sessions", 0);
+  const [totalFocus, setTotalFocus] = useLS("fb_totalFocus", 0);
+  const [history, setHistory]     = useLS("fb_history", []);
+  const [combo, setCombo]         = useLS("fb_combo", 0);
+  const [savedActivity, setSavedActivity] = useLS("fb_lastActivity", "study");
+  const [savedTopic, setSavedTopic]       = useLS("fb_lastTopic", "");
+  const [activityStats, setActivityStats] = useLS("fb_activity_stats", {});
+
+  // Phase: idle | setup | quote | work | break | done
+  const [phase, setPhase] = useState("idle");
+  const [secs, setSecs]   = useState(workMin * 60);
+
+  // Setup (editable before start)
+  const [selActivity, setSelActivity] = useState(savedActivity || "study");
+  const [topicInput, setTopicInput]   = useState(savedTopic || "");
+  const [selPreset, setSelPreset]     = useState("pomodoro");
+  const [customWork, setCustomWork]   = useState(String(workMin));
+  const [customBreak, setCustomBreak] = useState(String(breakMin));
+  const [difficulty, setDifficulty]   = useState(2);
+
+  // Locked-in session values (don't change mid-session)
+  const [activeActivity, setActiveActivity] = useState(savedActivity || "study");
+  const [activeTopic, setActiveTopic]       = useState(savedTopic || "");
+  const [activeWork, setActiveWork]         = useState(workMin);
+  const [activeBreak, setActiveBreak]       = useState(breakMin);
+
+  // Breathing
+  const [showBreath, setShowBreath]   = useState(false);
+  const [breathPhase, setBreathPhase] = useState(0);
+  const [breathSecs, setBreathSecs]   = useState(4);
+  const [breathCount, setBreathCount] = useState(0);
+
+  const [tab, setTab]   = useState("timer"); // timer | history
+  const [qIdx]          = useState(() => Math.floor(Math.random() * QUOTES_TR.length));
+  const iRef = useRef(null);
+  const bRef = useRef(null);
+  const quotes = lang === "tr" ? QUOTES_TR : QUOTES_EN;
+
+  const CIRC      = 2 * Math.PI * 110;
+  const totalSecs = phase === "break" ? activeBreak * 60 : activeWork * 60;
+  const progress  = totalSecs > 0 ? (totalSecs - secs) / totalSecs : 0;
+  const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+  const ss = String(secs % 60).padStart(2, "0");
+  const ringColor = phase === "break" ? "#00ff88" : phase === "done" ? "#ffd700" : T.accent;
+
+  const actObj       = ACTIVITIES.find(a => a.id === selActivity)    || ACTIVITIES[0];
+  const activeActObj = ACTIVITIES.find(a => a.id === activeActivity) || ACTIVITIES[0];
+
+  const todaySessions = history.filter(h => h.date === new Date().toDateString());
+  const todayMins     = todaySessions.reduce((s, h) => s + (h.min || 0), 0);
+
+  // ── Timer ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (phase !== "work" && phase !== "break") return;
+    iRef.current = setInterval(() => {
+      setSecs(s => {
+        if (s > 1) return s - 1;
+        clearInterval(iRef.current);
+        if (phase === "work") {
+          const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
+          const diffMult  = difficulty === 3 ? 1.5 : difficulty === 2 ? 1.2 : 1.0;
+          const pts       = Math.floor((basePts + (bfx.focusBonus || 0)) * diffMult);
+          const xpEarned  = Math.floor((pts / 2) * (1 + (bfx.xpMultiplier || 0))) + (bfx.xpFlat || 0);
+          addPoints(pts); addXP(xpEarned);
+          setSessions(n => n + 1);
+          setTotalFocus(tf => tf + activeWork);
+          setCombo(c => c + 1);
+          const now = new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour:"2-digit", minute:"2-digit" });
+          setHistory(h => [{ min:activeWork, at:now, date:new Date().toDateString(), activity:activeActivity, topic:activeTopic, difficulty, pts, xp:xpEarned }, ...h.slice(0, 49)]);
+          setActivityStats(prev => { const c = prev[activeActivity] || { mins:0, count:0 }; return { ...prev, [activeActivity]:{ mins:c.mins+activeWork, count:c.count+1 } }; });
+          setPhase("done");
+        } else {
+          setPhase("idle"); setSecs(activeWork * 60);
+        }
+        return 0;
+      });
+    }, 1000);
+    return () => clearInterval(iRef.current);
+  }, [phase, activeWork, activeBreak]);
+
+  // ── Breathing ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!showBreath) { clearInterval(bRef.current); return; }
+    bRef.current = setInterval(() => {
+      setBreathSecs(s => {
+        if (s > 1) return s - 1;
+        setBreathPhase(p => { const n = (p + 1) % 3; if (p === 2) setBreathCount(c => c + 1); return n; });
+        return 4;
+      });
+    }, 1000);
+    return () => clearInterval(bRef.current);
+  }, [showBreath]);
+
+  // ── Actions ───────────────────────────────────────────────────
+  function pickPreset(pid) {
+    setSelPreset(pid);
+    const p = FOCUS_PRESETS.find(x => x.id === pid);
+    if (p && p.work > 0) { setCustomWork(String(p.work)); setCustomBreak(String(p.brk)); setWorkMin(p.work); setBreakMin(p.brk); }
+  }
+  function commitSetup() {
+    const w = Math.max(1, Math.min(180, parseInt(customWork) || 25));
+    const b = Math.max(1, Math.min(60,  parseInt(customBreak) || 5));
+    setWorkMin(w); setBreakMin(b); setCustomWork(String(w)); setCustomBreak(String(b));
+    setSavedActivity(selActivity); setSavedTopic(topicInput);
+    setPhase("idle");
+  }
+  function launch() {
+    setActiveActivity(selActivity); setActiveTopic(topicInput);
+    setActiveWork(workMin); setActiveBreak(breakMin);
+    setSecs(workMin * 60); setPhase("quote");
+  }
+  function doBreak()  { setSecs(activeBreak * 60); setPhase("break"); }
+  function doReset()  { clearInterval(iRef.current); setPhase("idle"); setSecs(workMin * 60); }
+  const breathColors = ["#00e5ff","#ffd700","#a78bfa"];
+  const breathLabels = [t.breatheIn, t.breatheHold, t.breatheOut];
+
+  // ═════════════════════════════════════════════════════════════
+  return (
+    <div style={{ padding:"16px 16px 100px" }}>
+
+      {/* ── Top bar ─────────────────────────────────────────── */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+        <div>
+          <h2 style={{ ...orb, fontSize:14, color:T.textMuted, letterSpacing:3 }}>
+            {phase==="break" ? "🌿 MOLA" : phase==="work" ? `${activeActObj.icon} ODAK` : "ODAK SEANSI"}
+          </h2>
+          {(phase==="work"||phase==="done") && activeTopic && (
+            <p style={{ fontSize:11, color:activeActObj.color, marginTop:3 }}>📌 {activeTopic}</p>
+          )}
+        </div>
+        <div style={{ display:"flex", gap:7 }}>
+          <button onClick={()=>setShowBreath(!showBreath)} style={{ background:showBreath?"rgba(124,58,237,0.25)":"rgba(124,58,237,0.1)", border:"1px solid rgba(124,58,237,0.3)", borderRadius:10, padding:"7px 11px", color:"#a78bfa", cursor:"pointer", ...orb, fontSize:10 }}>🫁</button>
+          <button onClick={()=>setTab(v=>v==="history"?"timer":"history")} style={{ background:tab==="history"?`${T.accent}20`:T.surface, border:`1px solid ${tab==="history"?T.accent:T.border}`, borderRadius:10, padding:"7px 11px", color:tab==="history"?T.accent:T.textMuted, cursor:"pointer", ...orb, fontSize:10 }}>📋</button>
+        </div>
+      </div>
+
+      {/* ── Breathing overlay ───────────────────────────────── */}
+      {showBreath && (
+        <div style={{ background:`${breathColors[breathPhase]}12`, border:`1px solid ${breathColors[breathPhase]}30`, borderRadius:18, padding:20, marginBottom:14, textAlign:"center" }}>
+          <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:8 }}>NEFES EGZERSİZİ · {breathCount} döngü</div>
+          <div style={{ width:80, height:80, borderRadius:"50%", margin:"0 auto 12px", background:`radial-gradient(circle,${breathColors[breathPhase]}25,transparent)`, border:`2px solid ${breathColors[breathPhase]}`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 24px ${breathColors[breathPhase]}40` }}>
+            <div style={{ ...orb, fontSize:20, color:breathColors[breathPhase] }}>{breathSecs}</div>
+          </div>
+          <div style={{ ...orb, fontSize:12, color:breathColors[breathPhase], letterSpacing:2, marginBottom:8 }}>{breathLabels[breathPhase]}</div>
+          <button onClick={()=>{setShowBreath(false);setBreathPhase(0);setBreathSecs(4);}} style={{ background:"rgba(255,255,255,0.05)", border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 16px", color:T.textMuted, cursor:"pointer", ...orb, fontSize:9 }}>Kapat</button>
+        </div>
+      )}
+
+      {/* ══════════════════════════ TIMER TAB ══════════════════ */}
+      {tab==="timer" && (
+        <>
+          {/* ── IDLE: Setup (2 adım) → Başlat ─────────────── */}
+          {phase==="idle" && (
+            <>
+              {/* STEP 1 — Aktivite + Konu */}
+              <div style={{ ...glowCard(actObj.color, T, { padding:18, marginBottom:12 }) }}>
+                <div style={{ ...orb, fontSize:9, color:actObj.color, letterSpacing:2, marginBottom:12 }}>1 · AKTİVİTE & KONU</div>
+                {/* Activity grid */}
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
+                  {ACTIVITIES.map(a => (
+                    <button key={a.id} onClick={()=>setSelActivity(a.id)} style={{
+                      padding:"6px 10px", borderRadius:10, cursor:"pointer", display:"flex", alignItems:"center", gap:5,
+                      background: selActivity===a.id ? `${a.color}25` : "rgba(255,255,255,0.04)",
+                      border: selActivity===a.id ? `1px solid ${a.color}` : `1px solid ${T.border}`,
+                      transition:"all 0.15s",
+                    }}>
+                      <span style={{ fontSize:14 }}>{a.icon}</span>
+                      <span style={{ ...orb, fontSize:8, color:selActivity===a.id?a.color:T.textMuted, letterSpacing:0.3 }}>
+                        {lang==="tr"?a.label:a.labelEn}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {/* Topic input */}
+                <input
+                  placeholder="Konu / Başlık — opsiyonel (örn: Matematik Türev)"
+                  value={topicInput}
+                  onChange={e=>setTopicInput(e.target.value)}
+                  style={{ width:"100%", background:T.inputBg, border:`1px solid ${T.inputBorder}`, borderRadius:10, padding:"10px 13px", color:T.text, fontSize:12, outline:"none" }}
+                />
+              </div>
+
+              {/* STEP 2 — Süre & Mod */}
+              <div style={{ ...card(T, { padding:18, marginBottom:14 }) }}>
+                <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>2 · SÜRE & MOD</div>
+                {/* Preset row */}
+                <div style={{ display:"flex", gap:7, marginBottom:14 }}>
+                  {FOCUS_PRESETS.map(p => (
+                    <button key={p.id} onClick={()=>pickPreset(p.id)} style={{
+                      flex:1, padding:"10px 4px", borderRadius:12, cursor:"pointer", textAlign:"center",
+                      background: selPreset===p.id ? `${p.color}20` : "rgba(255,255,255,0.03)",
+                      border: selPreset===p.id ? `1px solid ${p.color}` : `1px solid ${T.border}`,
+                      transition:"all 0.15s",
+                    }}>
+                      <div style={{ fontSize:18, marginBottom:4 }}>{p.icon}</div>
+                      <div style={{ ...orb, fontSize:8, color:selPreset===p.id?p.color:T.textMuted, lineHeight:1.3 }}>{p.label}</div>
+                      {p.work>0 && <div style={{ ...orb, fontSize:7, color:T.textDim, marginTop:2 }}>{p.work}/{p.brk}</div>}
+                    </button>
+                  ))}
+                </div>
+                {/* Duration inputs — always visible, compact */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+                  {[["⏱ Odak (dk)", customWork, setCustomWork, setWorkMin], ["☕ Mola (dk)", customBreak, setCustomBreak, setBreakMin]].map(([label,val,setter,persist]) => (
+                    <div key={label}>
+                      <div style={{ ...orb, fontSize:9, color:T.textDim, marginBottom:5 }}>{label}</div>
+                      <input type="number" value={val}
+                        onChange={e=>{ setter(e.target.value); setSelPreset("custom"); }}
+                        onBlur={e=>{ const n=Math.max(1,parseInt(e.target.value)||25); setter(String(n)); persist(n); }}
+                        style={{ width:"100%", background:T.inputBg, border:`1px solid ${T.inputBorder}`, borderRadius:10, padding:"9px", color:T.text, fontSize:22, ...orb, textAlign:"center", outline:"none" }} />
+                    </div>
+                  ))}
+                </div>
+                {/* Difficulty */}
+                <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:10 }}>ZORLUK SEVİYESİ</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {[
+                    { d:1, label:"Kolay",  color:"#00ff88", icon:"🟢",
+                      perks:["Daha kısa odak süreleri (15-25dk)","Mola süren daha uzun tutulur","Standart puan: ⚡ x1","Alışkanlık baskısı yok","Yeni başlayanlar için ideal"],
+                      bonus:null, xpMult:"x1" },
+                    { d:2, label:"Orta",   color:"#ffd700", icon:"🟡",
+                      perks:["Orta süre seanslar (25-50dk)","Standart mola süreleri","Puan: ⚡ x1.2 bonus","Günlük görevler daha kolay tamamlanır","Çoğu kullanıcı için önerilen"],
+                      bonus:"+%20 puan", xpMult:"x1.2" },
+                    { d:3, label:"Zor",    color:"#ff6b35", icon:"🔴",
+                      perks:["Uzun ve derin seanslar (45-90dk)","Minimum mola süreleri","Puan: ⚡ x1.5 bonus","Özel görev: Haftalık Derin Odak Ustası","Streak bonusu x2 kazanırsın"],
+                      bonus:"+%50 puan", xpMult:"x1.5" },
+                  ].map(({d,label,color,icon,perks,bonus,xpMult}) => {
+                    const sel = difficulty===d;
+                    return (
+                      <button key={d} onClick={()=>setDifficulty(d)} style={{
+                        padding:"12px 14px", borderRadius:14, cursor:"pointer", textAlign:"left",
+                        background: sel?`${color}15`:"rgba(255,255,255,0.03)",
+                        border: sel?`1px solid ${color}`:`1px solid ${T.border}`,
+                        transition:"all 0.2s",
+                      }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: sel?10:0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:16 }}>{icon}</span>
+                            <span style={{ ...orb, fontSize:11, color:sel?color:T.textMuted, letterSpacing:1 }}>
+                              {"●".repeat(d)+"○".repeat(3-d)}  {label}
+                            </span>
+                          </div>
+                          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                            {bonus && sel && <span style={{ ...orb, fontSize:9, color, background:`${color}20`, padding:"2px 8px", borderRadius:6 }}>{bonus}</span>}
+                            <span style={{ ...orb, fontSize:9, color:sel?color:T.textDim }}>XP {xpMult}</span>
+                            <span style={{ ...orb, fontSize:12, color:sel?color:T.textDim }}>{sel?"▲":"▸"}</span>
+                          </div>
+                        </div>
+                        {sel && (
+                          <div style={{ display:"flex", flexDirection:"column", gap:4, paddingLeft:24 }}>
+                            {perks.map((p,i) => (
+                              <div key={i} style={{ display:"flex", gap:6, alignItems:"flex-start" }}>
+                                <span style={{ color, fontSize:9, marginTop:1, flexShrink:0 }}>✦</span>
+                                <span style={{ fontSize:10, color:T.textMuted, lineHeight:1.4 }}>{p}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bonus hint */}
+              {bfx.focusBonus>0 && (
+                <div style={{ background:"rgba(0,229,255,0.07)", border:"1px solid rgba(0,229,255,0.18)", borderRadius:10, padding:"8px 13px", marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:14 }}>🏛️</span>
+                  <span style={{ fontSize:11, color:T.accent }}>Üs bonusu: <strong>+{bfx.focusBonus}⚡</strong> bu seans eklenecek</span>
+                </div>
+              )}
+
+              {/* Today mini stats */}
+              <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+                {[[String(todaySessions.length),"BUGÜN SEANS","🎯"],[String(todayMins)+"dk","BUGÜN SÜRE","⏱"],[String(combo)+"×","KOMBO","🔥"]].map(([v,l,ic])=>(
+                  <div key={l} style={{ flex:1, ...card(T,{padding:"10px 6px",textAlign:"center"}) }}>
+                    <div style={{ fontSize:16, marginBottom:4 }}>{ic}</div>
+                    <div style={{ ...orb, fontSize:13, color:T.text }}>{v}</div>
+                    <div style={{ ...orb, fontSize:7, color:T.textDim, marginTop:2 }}>{l}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* START button */}
+              <button onClick={launch} style={{ ...btn(actObj.color,{width:"100%",padding:"18px",fontSize:16,letterSpacing:4,borderRadius:16}) }}>
+                BAŞLAT
+              </button>
+            </>
+          )}
+
+          {/* ── QUOTE (seans hazırlık) ─────────────────────── */}
+          {phase==="quote" && (
+            <div style={{ background:"rgba(167,139,250,0.1)", border:"1px solid rgba(167,139,250,0.25)", borderRadius:20, padding:28, textAlign:"center", animation:"fadeIn 0.5s ease" }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>{activeActObj.icon}</div>
+              <div style={{ ...orb, fontSize:11, color:activeActObj.color, letterSpacing:2, marginBottom:4 }}>
+                {lang==="tr"?activeActObj.label:activeActObj.labelEn}
+                {activeTopic && <span style={{ color:T.textMuted }}> · {activeTopic}</span>}
+              </div>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, marginBottom:20 }}>⏱ {activeWork}dk · ☕ {activeBreak}dk · {["Kolay","Orta","Zor"][difficulty-1]}</div>
+              <p style={{ fontSize:15, color:T.text, lineHeight:1.7, fontStyle:"italic", marginBottom:10 }}>"{quotes[qIdx].text}"</p>
+              <p style={{ ...orb, fontSize:11, color:"#a78bfa", letterSpacing:1, marginBottom:22 }}>— {quotes[qIdx].author}</p>
+              <button onClick={()=>{setPhase("work");setSecs(activeWork*60);}} style={{ background:"linear-gradient(135deg,#a78bfa,#7c3aed)", border:"none", borderRadius:14, padding:"14px 44px", color:"white", ...orb, fontSize:13, fontWeight:700, letterSpacing:2, cursor:"pointer", boxShadow:"0 0 30px rgba(167,139,250,0.4)" }}>
+                ZİHNİM HAZIR →
+              </button>
+            </div>
+          )}
+
+          {/* ── WORK / BREAK / DONE: timer circle ─────────── */}
+          {(phase==="work"||phase==="break"||phase==="done") && (
+            <>
+              {combo>1 && phase==="work" && (
+                <div style={{ textAlign:"center", marginBottom:8 }}>
+                  <span style={{ background:"linear-gradient(135deg,#ff6b35,#ff4444)", borderRadius:20, padding:"4px 16px", ...orb, fontSize:11, color:"white", letterSpacing:1 }}>🔥 {combo}× KOMBO</span>
+                </div>
+              )}
+              {phase!=="done" && (
+                <div style={{ textAlign:"center", marginBottom:6 }}>
+                  <span style={{ ...orb, fontSize:10, color:activeActObj.color, letterSpacing:2 }}>
+                    {activeActObj.icon} {lang==="tr"?activeActObj.label:activeActObj.labelEn}
+                    {activeTopic && <span style={{ color:T.textDim }}> · {activeTopic}</span>}
+                  </span>
+                </div>
+              )}
+              <div style={{ position:"relative", display:"flex", justifyContent:"center", marginBottom:20 }}>
+                <svg width={260} height={260} style={{ transform:"rotate(-90deg)" }}>
+                  <circle cx={130} cy={130} r={110} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={12}/>
+                  <circle cx={130} cy={130} r={110} fill="none" stroke={ringColor} strokeWidth={8} strokeLinecap="round"
+                    strokeDasharray={CIRC} strokeDashoffset={CIRC*(1-progress)}
+                    style={{ transition:"stroke-dashoffset 1s linear", filter:`drop-shadow(0 0 14px ${ringColor})` }}/>
+                </svg>
+                <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                  {phase==="break" && <span style={{ fontSize:22, marginBottom:4 }}>🌿</span>}
+                  <span style={{ ...orb, fontSize:48, color:T.text, letterSpacing:3, lineHeight:1 }}>{mm}:{ss}</span>
+                  <span style={{ ...orb, fontSize:9, color:ringColor, letterSpacing:3, marginTop:6 }}>
+                    {phase==="work"?"ODAKLANIYORSUN":phase==="break"?"MOLA":"TAMAMLANDI ✓"}
+                  </span>
+                  {phase==="work" && <span style={{ fontSize:9, color:T.textDim, marginTop:3 }}>{activeWork}dk · {["Kolay","Orta","Zor"][difficulty-1]}</span>}
+                </div>
+              </div>
+
+              <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+                {[[String(sessions),"SEANS","🎯"],[String(totalFocus)+"dk","TOPLAM","⏱️"],[String(todayMins)+"dk","BUGÜN","📅"]].map(([v,l,ic])=>(
+                  <div key={l} style={{ flex:1,...card(T,{padding:"10px 6px",textAlign:"center"}) }}>
+                    <div style={{ fontSize:14, marginBottom:3 }}>{ic}</div>
+                    <div style={{ ...orb, fontSize:12, color:T.text }}>{v}</div>
+                    <div style={{ ...orb, fontSize:7, color:T.textDim, marginTop:2 }}>{l}</div>
+                  </div>
+                ))}
+              </div>
+
+              {phase==="work" && (
+                <div style={{ display:"flex", justifyContent:"center" }}>
+                  <button onClick={doReset} style={{ padding:"11px 28px", borderRadius:12, fontSize:11, cursor:"pointer", ...orb, letterSpacing:1, background:"rgba(255,50,50,0.1)", border:"1px solid rgba(255,50,50,0.3)", color:"rgba(255,100,100,0.8)" }}>⏹ İptal</button>
+                </div>
+              )}
+              {phase==="break" && (
+                <div style={{ display:"flex", justifyContent:"center" }}>
+                  <button onClick={doReset} style={{ ...btn("#00ff88",{padding:"13px 36px",fontSize:12}) }}>Moladan Çıkış</button>
+                </div>
+              )}
+              {phase==="done" && (
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:52, marginBottom:10 }}>🏆</div>
+                  <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:`${activeActObj.color}15`, border:`1px solid ${activeActObj.color}30`, borderRadius:12, padding:"8px 16px", marginBottom:12 }}>
+                    <span style={{ fontSize:18 }}>{activeActObj.icon}</span>
+                    <span style={{ ...orb, fontSize:11, color:activeActObj.color }}>{lang==="tr"?activeActObj.label:activeActObj.labelEn}{activeTopic?` · ${activeTopic}`:""}</span>
+                  </div>
+                  <p style={{ ...orb, color:"#ffd700", fontSize:15, letterSpacing:2, marginBottom:4 }}>
+                    +{Math.floor(((activeWork>=45?40:activeWork>=25?25:12)+(bfx.focusBonus||0))*(difficulty===3?1.5:difficulty===2?1.2:1))} ⚡
+                    {difficulty>1 && <span style={{ ...orb, fontSize:9, color:["","","#ffd700","#ff6b35"][difficulty] }}> ({difficulty===3?"🔴 x1.5":"🟡 x1.2"})</span>}
+                    {bfx.focusBonus>0 && <span style={{ ...orb, fontSize:9, color:T.textDim }}> +{bfx.focusBonus}🏛️</span>}
+                  </p>
+                  <p style={{ color:T.textMuted, fontSize:12, marginBottom:20, fontStyle:"italic", lineHeight:1.6 }}>
+                    "{quotes[(qIdx+1)%quotes.length].text}"
+                  </p>
+                  <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                    <button onClick={doBreak} style={{ ...btn("#00ff88",{padding:"12px 22px",fontSize:11}) }}>🌿 {activeBreak}dk Mola</button>
+                    <button onClick={doReset} style={{ ...btn(T.accent,{padding:"12px 22px",fontSize:11}) }}>🔄 Yeni Seans</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ══════════════════════════ HISTORY TAB ════════════════ */}
+      {tab==="history" && (
+        <div>
+          {/* Activity breakdown bars */}
+          {Object.keys(activityStats).length>0 && (
+            <div style={{ ...card(T,{padding:16,marginBottom:14}) }}>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>AKTİVİTE DAĞILIMI</div>
+              {Object.entries(activityStats).sort((a,b)=>b[1].mins-a[1].mins).map(([id,st])=>{
+                const a=ACTIVITIES.find(x=>x.id===id)||ACTIVITIES[ACTIVITIES.length-1];
+                const maxM=Math.max(...Object.values(activityStats).map(x=>x.mins),1);
+                return (
+                  <div key={id} style={{ marginBottom:10 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                      <div style={{ display:"flex", gap:7, alignItems:"center" }}>
+                        <span style={{ fontSize:16 }}>{a.icon}</span>
+                        <div>
+                          <div style={{ fontSize:11, color:T.text }}>{lang==="tr"?a.label:a.labelEn}</div>
+                          <div style={{ ...orb, fontSize:8, color:T.textDim }}>{st.count} seans</div>
+                        </div>
+                      </div>
+                      <span style={{ ...orb, fontSize:13, color:a.color }}>{st.mins}dk</span>
+                    </div>
+                    <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:5, height:5, overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${(st.mins/maxM)*100}%`, background:a.color, borderRadius:5, transition:"width 0.8s ease", boxShadow:`0 0 6px ${a.color}50` }}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {/* Session list */}
+          <div style={{ ...card(T,{padding:16}) }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>SON SEANSLAR</div>
+            {history.length===0
+              ? <p style={{ fontSize:12, color:T.textDim, textAlign:"center", padding:"14px 0" }}>Henüz seans yok.</p>
+              : history.slice(0,15).map((h,i)=>{
+                  const a=ACTIVITIES.find(x=>x.id===h.activity)||ACTIVITIES[ACTIVITIES.length-1];
+                  return (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${T.border}` }}>
+                      <div style={{ display:"flex", gap:9, alignItems:"center" }}>
+                        <div style={{ width:32, height:32, borderRadius:9, background:`${a.color}18`, border:`1px solid ${a.color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>{a.icon}</div>
+                        <div>
+                          <div style={{ ...orb, fontSize:11, color:T.text }}>{h.min}dk</div>
+                          <div style={{ fontSize:9, color:T.textDim }}>{h.topic?`📌 ${h.topic}`:(lang==="tr"?a.label:a.labelEn)}</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ ...orb, fontSize:9, color:T.textMuted }}>{h.at}</div>
+                        {h.pts && <div style={{ ...orb, fontSize:8, color:"#ffd700" }}>+{h.pts}⚡</div>}
+                      </div>
+                    </div>
+                  );
+                })
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   HABITS SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+function HabitsScreen() {
+  const { T, t, lang, addPoints, addXP, todayKey, baseEffects } = useApp();
+  const bfx = baseEffects || {};
+  const [habits, setHabits] = useLS("fb_habits_v3", DEFAULT_HABITS);
+  const [checked, setChecked] = useLS("fb_checked_" + todayKey, []);
+  const [streak, setStreak] = useLS("fb_streak", 0);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newIcon, setNewIcon] = useState("⭐");
+  const [newColor, setNewColor] = useState("#00e5ff");
+  const [newTarget, setNewTarget] = useState("");
+  const [expanded, setExpanded] = useState(null);
+  const [editId, setEditId] = useState(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [weekData] = useLS("fb_weekData", {});
+
+  const ICONS = ["⭐","🏃","🎸","💊","🍎","☕","🧹","💪","🎯","✍️","🌅","🛏️","🥗","🧃","🎵","🚴","📖","🧘","💤","🌊"];
+  const COLORS = ["#00e5ff","#00ff88","#ffd700","#ff6b35","#a78bfa","#ec4899","#f59e0b","#22c55e","#0ea5e9","#14b8a6"];
+
+  function toggle(id) {
+    const done = checked.includes(id);
+    if (!done) {
+      const habPts = 5 + (bfx.habitBonus || 0);
+      setChecked(p => [...p, id]);
+      addPoints(habPts);
+      addXP(3);
+    } else setChecked(p => p.filter(x => x !== id));
+  }
+  function addHabit() {
+    if (!newLabel.trim()) return;
+    setHabits(p => [...p, { id:"h_"+Date.now(), label:newLabel.trim(), labelEn:newLabel.trim(), icon:newIcon, color:newColor, target:newTarget || "Günlük tutarlılık." }]);
+    setNewLabel(""); setNewTarget(""); setShowAdd(false);
+  }
+  function removeHabit(id) { setHabits(p => p.filter(h => h.id !== id)); setChecked(p => p.filter(x => x !== id)); }
+  function saveEdit(id) { setHabits(p => p.map(h => h.id === id ? { ...h, label:editLabel } : h)); setEditId(null); }
+
+  const pct = habits.length ? Math.round((checked.length / habits.length) * 100) : 0;
+  const allDone = checked.length === habits.length && habits.length > 0;
+  const last7 = Array.from({ length:7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d.toDateString(); });
+
+  return (
+    <div style={{ padding:"16px 16px 100px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+        <div>
+          <h2 style={{ ...orb, fontSize:14, color:T.textMuted, letterSpacing:3 }}>{t.habitsTitle}</h2>
+          <p style={{ ...orb, fontSize:9, color:T.textDim, marginTop:3 }}>
+            {new Date().toLocaleDateString(lang === "tr" ? "tr-TR" : "en-US", { weekday:"long", day:"numeric", month:"long" }).toUpperCase()}
+          </p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)} style={{ ...btn(T.accent, { padding:"9px 16px", fontSize:11 }) }}>
+          {t.addHabit}
+        </button>
+      </div>
+
+      {/* Streak + Progress */}
+      <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+        <div style={{ flex:1, background:"rgba(255,160,0,0.08)", border:"1px solid rgba(255,160,0,0.2)", borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:28 }}>🔥</span>
+          <div>
+            <div style={{ ...orb, fontSize:24, color:"#ffd700", lineHeight:1 }}>{streak}</div>
+            <div style={{ ...orb, fontSize:8, color:T.textDim, letterSpacing:1 }}>{t.streakDays}</div>
+          </div>
+        </div>
+        <div style={{ flex:1, background:allDone ? "rgba(0,255,136,0.08)" : T.surface, border:allDone ? "1px solid rgba(0,255,136,0.25)" : `1px solid ${T.border}`, borderRadius:14, padding:"14px 16px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ ...orb, fontSize:9, color:T.textDim }}>{t.completedLabel}</span>
+            <span style={{ ...orb, fontSize:13, color:allDone ? "#00ff88" : T.accent }}>{checked.length}/{habits.length}</span>
+          </div>
+          <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:6, height:6, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${pct}%`, background:allDone ? "linear-gradient(90deg,#00ff88,#00c87a)" : `linear-gradient(90deg,${T.accent},${T.accent}88)`, borderRadius:6, transition:"width 0.5s ease" }} />
+          </div>
+          {allDone && <div style={{ ...orb, fontSize:9, color:"#00ff88", letterSpacing:1, marginTop:6 }}>{t.allDoneLabel}</div>}
+        </div>
+      </div>
+
+      {/* Weekly Heatmap */}
+      <div style={{ ...card(T, { padding:14, marginBottom:14 }) }}>
+        <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:10 }}>{t.habitActivity}</div>
+        <div style={{ display:"flex", gap:6, justifyContent:"space-between" }}>
+          {last7.map((day, i) => {
+            const isToday = day === todayKey;
+            const count = isToday ? checked.length : (weekData[day] || 0);
+            const intensity = habits.length ? Math.min(1, count / habits.length) : 0;
+            const dayName = t.days[new Date(day).getDay() === 0 ? 6 : new Date(day).getDay() - 1];
+            return (
+              <div key={i} style={{ flex:1, textAlign:"center" }}>
+                <div style={{
+                  height:36, borderRadius:8, marginBottom:4,
+                  background: isToday ? `${T.accent}30` : intensity > 0 ? `rgba(0,229,255,${0.1 + intensity * 0.4})` : "rgba(255,255,255,0.04)",
+                  border: isToday ? `1px solid ${T.accent}50` : "1px solid transparent",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:10, color: isToday ? T.accent : T.textDim,
+                }}>
+                  {isToday ? (checked.length || "·") : intensity > 0 ? "✓" : "·"}
+                </div>
+                <div style={{ ...orb, fontSize:7, color:T.textDim }}>{dayName}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Add Form */}
+      {showAdd && (
+        <div style={{ background:"rgba(0,255,136,0.06)", border:"1px solid rgba(0,255,136,0.2)", borderRadius:16, padding:18, marginBottom:14 }}>
+          <div style={{ ...orb, fontSize:10, color:"#00ff88", letterSpacing:2, marginBottom:14 }}>{t.newHabitTitle}</div>
+          <input placeholder={t.habitNamePH} value={newLabel} onChange={e => setNewLabel(e.target.value)}
+            style={{ width:"100%", background:T.inputBg, border:"1px solid rgba(0,255,136,0.3)", borderRadius:10, padding:"10px 12px", color:T.text, fontSize:14, outline:"none", marginBottom:10 }} />
+          <input placeholder={t.habitDescPH} value={newTarget} onChange={e => setNewTarget(e.target.value)}
+            style={{ width:"100%", background:T.inputBg, border:"1px solid rgba(0,255,136,0.2)", borderRadius:10, padding:"10px 12px", color:T.text, fontSize:12, outline:"none", marginBottom:12 }} />
+          <div style={{ ...orb, fontSize:9, color:T.textDim, marginBottom:8 }}>{t.iconLabel}</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
+            {ICONS.map(ic => (
+              <button key={ic} onClick={() => setNewIcon(ic)} style={{ width:34, height:34, borderRadius:8, fontSize:17, cursor:"pointer", background:newIcon === ic ? "rgba(0,255,136,0.2)" : "rgba(255,255,255,0.04)", border:newIcon === ic ? "1px solid #00ff88" : `1px solid ${T.border}` }}>{ic}</button>
+            ))}
+          </div>
+          <div style={{ ...orb, fontSize:9, color:T.textDim, marginBottom:8 }}>{t.colorLabel}</div>
+          <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+            {COLORS.map(c => (
+              <button key={c} onClick={() => setNewColor(c)} style={{ width:26, height:26, borderRadius:"50%", background:c, cursor:"pointer", border:newColor === c ? "2px solid white" : "2px solid transparent" }} />
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={addHabit} style={{ ...btn("#00ff88", { flex:1, padding:"12px", fontSize:12 }) }}>{t.save}</button>
+            <button onClick={() => setShowAdd(false)} style={{ flex:1, ...card(T, { padding:"12px", cursor:"pointer", ...orb, fontSize:12, color:T.textMuted }) }}>{t.cancel}</button>
+          </div>
+        </div>
+      )}
+
+      {/* Habit List */}
+      {habits.map(h => {
+        const done = checked.includes(h.id);
+        const exp = expanded === h.id;
+        const label = lang === "en" && h.labelEn ? h.labelEn : h.label;
+        return (
+          <div key={h.id} style={{ background:done ? `${h.color}10` : T.surface, border:done ? `1px solid ${h.color}40` : `1px solid ${T.border}`, borderRadius:16, overflow:"hidden", transition:"all 0.25s", marginBottom:10 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px" }}>
+              <span style={{ fontSize:26, filter:done ? `drop-shadow(0 0 8px ${h.color})` : "grayscale(50%)", transition:"filter 0.3s" }}>{h.icon}</span>
+              <div style={{ flex:1 }} onClick={() => setExpanded(exp ? null : h.id)}>
+                {editId === h.id ? (
+                  <input value={editLabel} onChange={e => setEditLabel(e.target.value)}
+                    onBlur={() => saveEdit(h.id)} onKeyDown={e => e.key === "Enter" && saveEdit(h.id)} autoFocus
+                    style={{ background:"transparent", border:"none", borderBottom:`1px solid ${h.color}`, color:T.text, fontSize:14, outline:"none", width:"100%" }} />
+                ) : (
+                  <div style={{ fontSize:14, color:done ? T.text : T.textMuted }}>{label}</div>
+                )}
+                <div style={{ display:"flex", gap:8, alignItems:"center", marginTop:3 }}>
+                  {done && <span style={{ ...orb, fontSize:9, color:h.color }}>+5⚡ +3XP</span>}
+                  <span style={{ fontSize:9, color:T.textDim }}>{t.detailHint}</span>
+                </div>
+              </div>
+              <div onClick={() => toggle(h.id)} style={{
+                width:30, height:30, borderRadius:9, cursor:"pointer",
+                background: done ? `linear-gradient(135deg,${h.color},${h.color}88)` : "rgba(255,255,255,0.05)",
+                border: done ? "none" : `1px solid ${h.color}50`,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:14, transition:"all 0.2s",
+                boxShadow: done ? `0 0 16px ${h.color}50` : "none",
+              }}>
+                {done && "✓"}
+              </div>
+            </div>
+            {exp && (
+              <div style={{ padding:"0 14px 14px", borderTop:`1px solid ${h.color}20` }}>
+                <p style={{ fontSize:12, color:T.textMuted, lineHeight:1.6, marginTop:10, marginBottom:12, fontStyle:"italic" }}>{h.target}</p>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={() => { setEditId(h.id); setEditLabel(label); }} style={{
+                    background:"rgba(255,255,255,0.04)", border:`1px solid ${h.color}30`, borderRadius:8,
+                    padding:"7px 12px", color:h.color, cursor:"pointer", ...orb, fontSize:9,
+                  }}>✏️ {t.editLabel}</button>
+                  <button onClick={() => removeHabit(h.id)} style={{
+                    background:"rgba(255,50,50,0.06)", border:"1px solid rgba(255,50,50,0.25)", borderRadius:8,
+                    padding:"7px 12px", color:"rgba(255,100,100,0.7)", cursor:"pointer", ...orb, fontSize:9,
+                  }}>🗑️ {t.deleteLabel}</button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MIND SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+function MindScreen() {
+  const { T, t, lang, addPoints, addXP, todayKey, baseEffects } = useApp();
+  const bfx = baseEffects || {};
+  const dayIdx = (new Date().getDay() + 6) % 7;
+  const todayGame = DAILY_GAMES[dayIdx];
+  const [playedGames, setPlayedGames] = useLS("fb_playedGames3", {});
+  const [activeGame, setActiveGame] = useState(null);
+  const [gs, setGs] = useState(null);
+  const reactionRef = useRef(null);
+
+  function isPlayed(id) { return !!playedGames[id + "_" + todayKey]; }
+  function getScore(id) { return playedGames[id + "_" + todayKey] || 0; }
+
+  function finish(score) {
+    if (!activeGame) return;
+    setPlayedGames(p => ({ ...p, [activeGame.id + "_" + todayKey]: score }));
+    const finalPts = Math.floor((20 + score) * (1 + (bfx.gameMultiplier || 0)));
+    const finalXP = Math.floor((10 + score / 2) * (1 + (bfx.xpMultiplier || 0))) + (bfx.xpFlat || 0);
+    addPoints(finalPts);
+    addXP(finalXP);
+    setGs(s => ({ ...s, phase:"result", score }));
+    clearTimeout(reactionRef.current);
+  }
+
+  function genMath() {
+    const ops = ["+","-","×"];
+    const op = ops[Math.floor(Math.random()*3)];
+    let a, b, ans;
+    if (op==="+") { a=Math.floor(Math.random()*50)+1; b=Math.floor(Math.random()*50)+1; ans=a+b; }
+    else if (op==="-") { a=Math.floor(Math.random()*50)+20; b=Math.floor(Math.random()*20)+1; ans=a-b; }
+    else { a=Math.floor(Math.random()*12)+1; b=Math.floor(Math.random()*12)+1; ans=a*b; }
+    const ch = new Set([ans]);
+    while (ch.size < 4) ch.add(ans + Math.floor(Math.random()*20) - 10);
+    return { q:`${a} ${op} ${b}`, ans, choices:[...ch].sort(() => Math.random()-0.5) };
+  }
+  function genPattern() {
+    const its = ["🔵","🔴","🟡","🟢","🟣","🟠"];
+    const g = Array.from({length:9}, () => its[Math.floor(Math.random()*its.length)]);
+    const oi = Math.floor(Math.random()*9);
+    g[oi] = its.filter(x => x !== g[oi])[Math.floor(Math.random()*5)];
+    return { grid:g, answer:oi };
+  }
+  function genWord() {
+    const w = WORDS[Math.floor(Math.random()*WORDS.length)];
+    return { word:w, scrambled:w.split("").sort(() => Math.random()-0.5).join("") };
+  }
+
+  function startGame(game) {
+    setActiveGame(game);
+    clearTimeout(reactionRef.current);
+    const id = game.id;
+    if (id==="memory") {
+      const em = ["🚀","⚡","🔬","📡","🛰️","🖥️","🏛️","🔭"];
+      const cards = [...em,...em].sort(() => Math.random()-0.5);
+      setGs({ phase:"show", cards, revealed:cards.map((_,i)=>i), matched:[], selected:[], score:0 });
+      setTimeout(() => setGs(s => s ? {...s, phase:"play", revealed:[]} : s), 3000);
+    }
+    if (id==="math") { setGs({ phase:"play", ...genMath(), correct:0, total:0, score:0 }); }
+    if (id==="pattern") { setGs({ phase:"play", ...genPattern(), score:0, answered:0 }); }
+    if (id==="word") { setGs({ phase:"play", ...genWord(), guesses:[], currentGuess:"", score:0 }); }
+    if (id==="sequence") {
+      const seq = Array.from({length:4}, () => Math.floor(Math.random()*9)+1);
+      setGs({ phase:"show", sequence:seq, step:0, round:0, score:0 });
+      setTimeout(() => setGs(s => s ? {...s, phase:"play"} : s), 2500);
+    }
+    if (id==="color") {
+      const cols = ["#ff4444","#00e5ff","#00ff88","#ffd700","#a78bfa","#ff6b35"];
+      const seq = Array.from({length:4}, () => cols[Math.floor(Math.random()*cols.length)]);
+      setGs({ phase:"show", sequence:seq, step:0, score:0 });
+      setTimeout(() => setGs(s => s ? {...s, phase:"play"} : s), 3000);
+    }
+    if (id==="reaction") {
+      setGs({ phase:"waiting", scores:[], round:0, maxRounds:5, score:0, showTarget:false });
+      scheduleReaction(2000 + Math.random()*2000);
+    }
+  }
+
+  function scheduleReaction(d) {
+    clearTimeout(reactionRef.current);
+    reactionRef.current = setTimeout(() => setGs(s => s ? {...s, showTarget:true, shownAt:Date.now()} : s), d);
+  }
+
+  function memCard(idx) {
+    if (!gs || gs.phase !== "play") return;
+    const { cards, revealed, matched, selected } = gs;
+    if (matched.includes(idx) || revealed.includes(idx) || selected.length >= 2) return;
+    const ns = [...selected, idx];
+    const nr = [...revealed, idx];
+    if (ns.length === 2) {
+      const [a, b] = ns;
+      if (cards[a] === cards[b]) {
+        const nm = [...matched, a, b];
+        const sc = gs.score + 15;
+        if (nm.length === cards.length) {
+          setGs(s => ({...s, revealed:nr, matched:nm, selected:[], score:sc, phase:"result"}));
+          setPlayedGames(p => ({...p, ["memory_"+todayKey]: sc}));
+          addPoints(20+sc); addXP(Math.floor(10+sc/2));
+        } else {
+          setGs(s => ({...s, revealed:nr, matched:nm, selected:[], score:sc}));
+        }
+      } else {
+        setGs(s => ({...s, revealed:nr, selected:ns}));
+        setTimeout(() => setGs(s => s ? {...s, revealed:s.revealed.filter(i => !ns.includes(i)), selected:[]} : s), 800);
+      }
+    } else {
+      setGs(s => ({...s, revealed:nr, selected:ns}));
+    }
+  }
+  function mathAns(c) {
+    if (!gs || gs.phase !== "play") return;
+    const ok = c === gs.ans;
+    const nc = gs.correct + (ok ? 1 : 0);
+    const nt = gs.total + 1;
+    const ns = gs.score + (ok ? 10 : 0);
+    if (nt >= 8) finish(ns);
+    else setGs(s => ({...s, ...genMath(), correct:nc, total:nt, score:ns}));
+  }
+  function patternAns(idx) {
+    if (!gs || gs.phase !== "play") return;
+    const ok = idx === gs.answer;
+    const ns = gs.score + (ok ? 15 : 0);
+    const na = gs.answered + 1;
+    if (na >= 5) finish(ns);
+    else setGs(s => ({...s, ...genPattern(), score:ns, answered:na}));
+  }
+  function wordGuess() {
+    if (!gs) return;
+    const u = gs.currentGuess.toUpperCase().trim();
+    if (u === gs.word) finish(30);
+    else setGs(s => ({...s, guesses:[...s.guesses, u], currentGuess:"", score:Math.max(0, s.score-3)}));
+  }
+  function colorTap(c) {
+    if (!gs || gs.phase !== "play") return;
+    if (c === gs.sequence[gs.step]) {
+      const ns = gs.step + 1;
+      if (ns >= gs.sequence.length) finish(25);
+      else setGs(s => ({...s, step:ns}));
+    } else finish(gs.score);
+  }
+  function seqTap(n) {
+    if (!gs || gs.phase !== "play") return;
+    if (n === gs.sequence[gs.step]) {
+      const ns = gs.step + 1;
+      if (ns >= gs.sequence.length) {
+        if (gs.round >= 2) finish(gs.score + 20);
+        else {
+          const newSeq = [...gs.sequence, Math.floor(Math.random()*9)+1];
+          setGs(s => ({...s, phase:"show", sequence:newSeq, step:0, round:(s.round||0)+1, score:s.score+10}));
+          setTimeout(() => setGs(s => s ? {...s, phase:"play", step:0} : s), 2500);
+        }
+      } else setGs(s => ({...s, step:ns}));
+    } else finish(gs.score);
+  }
+  function reactionTap() {
+    if (!gs || !gs.showTarget) return;
+    const rt = Date.now() - gs.shownAt;
+    const ns = [...(gs.scores||[]), rt];
+    const nr = (gs.round||0) + 1;
+    if (nr >= gs.maxRounds) {
+      const avg = ns.reduce((a,b) => a+b, 0) / ns.length;
+      finish(Math.max(0, Math.floor((600-avg)/6)));
+    } else {
+      setGs(s => ({...s, scores:ns, round:nr, showTarget:false}));
+      scheduleReaction(1500 + Math.random()*2000);
+    }
+  }
+
+  // Active game view
+  if (activeGame && gs) {
+    const g = activeGame;
+    const gName = lang === "tr" ? g.nameTr : g.nameEn;
+    return (
+      <div style={{ padding:"16px 16px 100px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+          <button onClick={() => { setActiveGame(null); setGs(null); clearTimeout(reactionRef.current); }}
+            style={{ background:"none", border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 12px", color:T.textMuted, cursor:"pointer", fontSize:12 }}>
+            ← {t.close}
+          </button>
+          <h2 style={{ ...orb, fontSize:14, color:g.color, letterSpacing:2 }}>{g.icon} {gName}</h2>
+        </div>
+
+        {/* MEMORY */}
+        {g.id === "memory" && (
+          gs.phase === "result"
+            ? <GameResult score={gs.score} max={120} color={g.color} label="EŞLEŞTİRİLEN KART" lang={lang} gameMult={bfx.gameMultiplier||0} xpMult={bfx.xpMultiplier||0} xpFlatBonus={bfx.xpFlat||0} />
+            : <>
+                {gs.phase === "show" && <div style={{ textAlign:"center", ...orb, color:"#ffd700", fontSize:11, letterSpacing:2, marginBottom:10 }}>{t.memorizeHint}</div>}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
+                  {gs.cards.map((em, i) => {
+                    const rev = gs.revealed.includes(i) || gs.matched.includes(i);
+                    const mat = gs.matched.includes(i);
+                    return (
+                      <div key={i} onClick={() => memCard(i)} style={{
+                        aspectRatio:"1", borderRadius:12, cursor:"pointer",
+                        background: mat ? "rgba(0,255,136,0.15)" : rev ? `${g.color}15` : "rgba(255,255,255,0.04)",
+                        border: mat ? "1px solid rgba(0,255,136,0.4)" : rev ? `1px solid ${g.color}40` : `1px solid ${T.border}`,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                        fontSize:28, transition:"all 0.2s",
+                      }}>{rev ? em : "?"}</div>
+                    );
+                  })}
+                </div>
+              </>
+        )}
+
+        {/* MATH */}
+        {g.id === "math" && (
+          gs.phase === "result"
+            ? <GameResult score={gs.score} max={80} color={g.color} label={`${t.correctLabel}: ${gs.correct}/8`} lang={lang} gameMult={bfx.gameMultiplier||0} xpMult={bfx.xpMultiplier||0} xpFlatBonus={bfx.xpFlat||0} />
+            : <div style={{ textAlign:"center" }}>
+                <div style={{ ...orb, fontSize:10, color:T.textDim, marginBottom:8 }}>{(gs.total||0)+1}/8</div>
+                <div style={{ ...glowCard(g.color, T, { padding:"28px 20px", marginBottom:22 }) }}>
+                  <span style={{ ...orb, fontSize:44, color:T.text }}>{gs.q} = ?</span>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                  {gs.choices.map(c => (
+                    <button key={c} onClick={() => mathAns(c)} style={{ ...btn(g.color, { padding:"18px", fontSize:22, borderRadius:14, color:"#050a14" }), fontFamily:"'Orbitron',sans-serif" }}>{c}</button>
+                  ))}
+                </div>
+              </div>
+        )}
+
+        {/* PATTERN */}
+        {g.id === "pattern" && (
+          gs.phase === "result"
+            ? <GameResult score={gs.score} max={75} color={g.color} label="FARK PUANI" lang={lang} gameMult={bfx.gameMultiplier||0} xpMult={bfx.xpMultiplier||0} xpFlatBonus={bfx.xpFlat||0} />
+            : <div style={{ textAlign:"center" }}>
+                <p style={{ color:T.textMuted, fontSize:12, marginBottom:16 }}>Diğerlerinden farklı olanı bul</p>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, maxWidth:240, margin:"0 auto" }}>
+                  {gs.grid.map((em, i) => (
+                    <button key={i} onClick={() => patternAns(i)} style={{ aspectRatio:"1", borderRadius:12, fontSize:36, cursor:"pointer", background:"rgba(255,255,255,0.04)", border:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>{em}</button>
+                  ))}
+                </div>
+              </div>
+        )}
+
+        {/* WORD */}
+        {g.id === "word" && (
+          gs.phase === "result"
+            ? <GameResult score={gs.score} max={30} color={g.color} label={"CEVAP: " + gs.word} lang={lang} gameMult={bfx.gameMultiplier||0} xpMult={bfx.xpMultiplier||0} xpFlatBonus={bfx.xpFlat||0} />
+            : <div style={{ textAlign:"center" }}>
+                <p style={{ color:T.textMuted, fontSize:12, marginBottom:14 }}>Harfleri doğru sıraya diz:</p>
+                <div style={{ ...glowCard(g.color, T, { padding:"22px", marginBottom:20 }) }}>
+                  <span style={{ ...orb, fontSize:36, color:g.color, letterSpacing:10 }}>{gs.scrambled}</span>
+                </div>
+                <div style={{ ...orb, fontSize:10, color:T.textDim, marginBottom:8 }}>{t.attemptsLabel} {gs.guesses.join(", ") || "—"}</div>
+                <input value={gs.currentGuess} onChange={e => setGs(s => ({...s, currentGuess:e.target.value}))}
+                  onKeyDown={e => e.key === "Enter" && wordGuess()} placeholder={t.answerPH} autoFocus
+                  style={{ width:"100%", background:T.inputBg, border:`1px solid ${g.color}50`, borderRadius:12, padding:"14px 16px", color:T.text, fontSize:18, textAlign:"center", outline:"none", marginBottom:12, ...orb, letterSpacing:4, textTransform:"uppercase" }} />
+                <button onClick={wordGuess} style={{ ...btn(g.color, { padding:"14px 40px", fontSize:14 }) }}>{t.answerBtn}</button>
+              </div>
+        )}
+
+        {/* COLOR */}
+        {g.id === "color" && (
+          <>
+            {gs.phase === "show" && (
+              <div style={{ textAlign:"center" }}>
+                <div style={{ ...orb, color:"#ffd700", fontSize:11, letterSpacing:2, marginBottom:16 }}>SIRALAMAYI EZBERLE!</div>
+                <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                  {gs.sequence.map((c, i) => <div key={i} style={{ width:56, height:56, borderRadius:12, background:c, boxShadow:`0 0 18px ${c}` }} />)}
+                </div>
+              </div>
+            )}
+            {gs.phase === "play" && (
+              <div style={{ textAlign:"center" }}>
+                <div style={{ ...orb, color:T.textDim, fontSize:10, letterSpacing:2, marginBottom:12 }}>{gs.step+1}. rengi seç</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:12, justifyContent:"center" }}>
+                  {["#ff4444","#00e5ff","#00ff88","#ffd700","#a78bfa","#ff6b35"].map(c => (
+                    <button key={c} onClick={() => colorTap(c)} style={{ width:78, height:78, borderRadius:16, background:c, border:"none", cursor:"pointer", boxShadow:`0 0 18px ${c}55` }} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {gs.phase === "result" && <GameResult score={gs.score} max={25} color={g.color} label="RENK SIRASI" lang={lang} gameMult={bfx.gameMultiplier||0} xpMult={bfx.xpMultiplier||0} xpFlatBonus={bfx.xpFlat||0} />}
+          </>
+        )}
+
+        {/* SEQUENCE */}
+        {g.id === "sequence" && (
+          <>
+            {gs.phase === "show" && (
+              <div style={{ textAlign:"center" }}>
+                <div style={{ ...orb, color:"#ffd700", fontSize:11, letterSpacing:2, marginBottom:16 }}>{t.sequenceHint}</div>
+                <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+                  {gs.sequence.map((n, i) => (
+                    <div key={i} style={{ width:52, height:52, borderRadius:12, ...glowCard(g.color, T, { display:"flex", alignItems:"center", justifyContent:"center" }) }}>
+                      <span style={{ ...orb, fontSize:22, color:g.color }}>{n}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {gs.phase === "play" && (
+              <div style={{ textAlign:"center" }}>
+                <div style={{ ...orb, color:T.textDim, fontSize:10, marginBottom:14 }}>
+                  {gs.step+1}. rakam · {t.roundLabel} {(gs.round||0)+1}/3
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, maxWidth:280, margin:"0 auto" }}>
+                  {[1,2,3,4,5,6,7,8,9].map(n => (
+                    <button key={n} onClick={() => seqTap(n)} style={{ ...btn(g.color, { aspectRatio:"1", fontSize:24, borderRadius:14, color:"#050a14", fontFamily:"'Orbitron',sans-serif" }) }}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {gs.phase === "result" && <GameResult score={gs.score} max={60} color={g.color} label="DİZİ PUANI" lang={lang} gameMult={bfx.gameMultiplier||0} xpMult={bfx.xpMultiplier||0} xpFlatBonus={bfx.xpFlat||0} />}
+          </>
+        )}
+
+        {/* REACTION */}
+        {g.id === "reaction" && (
+          gs.phase === "result"
+            ? <GameResult score={gs.score} max={80} color={g.color} label={"ORT: " + (gs.scores?.length ? Math.round(gs.scores.reduce((a,b)=>a+b,0)/gs.scores.length) : 0) + "ms"} lang={lang} gameMult={bfx.gameMultiplier||0} xpMult={bfx.xpMultiplier||0} xpFlatBonus={bfx.xpFlat||0} />
+            : <div style={{ textAlign:"center" }}>
+                <div style={{ ...orb, color:T.textDim, fontSize:10, marginBottom:8 }}>{t.roundLabel} {(gs.round||0)}/{gs.maxRounds}</div>
+                <div onClick={reactionTap} style={{
+                  width:180, height:180, borderRadius:"50%", margin:"20px auto",
+                  background: gs.showTarget ? `radial-gradient(circle,${g.color},${g.color}88)` : "rgba(255,255,255,0.04)",
+                  border: gs.showTarget ? `2px solid ${g.color}` : `2px solid ${T.border}`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  cursor: gs.showTarget ? "pointer" : "default", transition:"all 0.1s",
+                  boxShadow: gs.showTarget ? `0 0 60px ${g.color}60` : "none",
+                }}>
+                  <span style={{ ...orb, fontSize:gs.showTarget?14:11, color:gs.showTarget?"#050a14":T.textDim, letterSpacing:2 }}>
+                    {gs.showTarget ? t.tapLabel : t.waitingLabel}
+                  </span>
+                </div>
+                {gs.scores?.length > 0 && <div style={{ fontSize:11, color:T.textMuted }}>Son: {gs.scores[gs.scores.length-1]}ms</div>}
+              </div>
+        )}
+      </div>
+    );
+  }
+
+  // Calendar view
+  return (
+    <div style={{ padding:"16px 16px 100px" }}>
+      <h2 style={{ ...orb, fontSize:14, color:T.textMuted, letterSpacing:3, marginBottom:6 }}>{t.mindTitle}</h2>
+      <p style={{ fontSize:11, color:T.textDim, marginBottom:18, lineHeight:1.5 }}>Her gün farklı oyun. Zincirini kırma.</p>
+
+      {/* Weekly grid */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:6, marginBottom:18 }}>
+        {DAILY_GAMES.map((g, i) => {
+          const isT = i === dayIdx;
+          const pl = isPlayed(g.id);
+          return (
+            <div key={g.id} style={{ textAlign:"center" }}>
+              <div style={{ ...orb, fontSize:8, color:isT ? g.color : T.textDim, marginBottom:4, letterSpacing:0.3 }}>
+                {t.days[i]}
+              </div>
+              <div style={{
+                aspectRatio:"1", borderRadius:10, fontSize:17, position:"relative",
+                background: pl ? `${g.color}22` : isT ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.02)",
+                border: isT ? `2px solid ${g.color}` : pl ? `1px solid ${g.color}50` : `1px solid ${T.border}`,
+                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                boxShadow: isT ? `0 0 14px ${g.color}30` : "none",
+              }}>
+                {g.icon}
+                {pl && <div style={{ position:"absolute", bottom:-2, right:-2, width:13, height:13, borderRadius:"50%", background:"#00ff88", fontSize:7, display:"flex", alignItems:"center", justifyContent:"center", color:"#050a14", fontWeight:700 }}>✓</div>}
+              </div>
+              {pl && <div style={{ ...orb, fontSize:7, color:g.color, marginTop:3 }}>{getScore(g.id)}p</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Today featured */}
+      <div style={{ ...glowCard(todayGame.color, T, { padding:20, marginBottom:14 }) }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+          <div>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:6 }}>{t.todayGame}</div>
+            <div style={{ ...orb, fontSize:20, color:todayGame.color, letterSpacing:1 }}>{todayGame.icon} {lang === "tr" ? todayGame.nameTr : todayGame.nameEn}</div>
+            <div style={{ fontSize:12, color:T.textMuted, marginTop:4 }}>{todayGame.desc}</div>
+          </div>
+          <span style={{ fontSize:44 }}>{todayGame.icon}</span>
+        </div>
+        <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+          {[[t.rewardLabel,"+20⚡"],[t.durLabel,"~60s"],[t.perDayLabel,"1×"]].map(([k,v]) => (
+            <div key={k} style={{ flex:1, ...card(T, { padding:"8px 6px", textAlign:"center" }) }}>
+              <div style={{ ...orb, fontSize:8, color:T.textDim }}>{k}</div>
+              <div style={{ ...orb, fontSize:11, color:todayGame.color, marginTop:2 }}>{v}</div>
+            </div>
+          ))}
+        </div>
+        {isPlayed(todayGame.id) ? (
+          <div style={{ padding:"12px", textAlign:"center", ...orb, fontSize:11, color:"#00ff88", letterSpacing:2 }}>
+            ✓ {t.playedLabel} · {getScore(todayGame.id)} PUAN
+          </div>
+        ) : (
+          <button onClick={() => startGame(todayGame)} style={{ ...btn(todayGame.color, { width:"100%", padding:"15px", fontSize:14 }) }}>
+            {t.playBtn}
+          </button>
+        )}
+      </div>
+
+      {/* Other games */}
+      <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:10 }}>{t.otherDays}</div>
+      {DAILY_GAMES.filter((_, i) => i !== dayIdx).map(g => {
+        const pl = isPlayed(g.id);
+        return (
+          <div key={g.id} style={{ ...card(T, { padding:"12px 14px", display:"flex", gap:12, alignItems:"center", marginBottom:8, opacity:0.65 }) }}>
+            <span style={{ fontSize:24 }}>{g.icon}</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, color:T.text }}>{lang === "tr" ? g.nameTr : g.nameEn}</div>
+              <div style={{ fontSize:11, color:T.textMuted }}>{g.desc}</div>
+            </div>
+            {pl
+              ? <span style={{ ...orb, fontSize:10, color:"#00ff88" }}>✓ {getScore(g.id)}p</span>
+              : <span style={{ ...orb, fontSize:9, color:T.textDim }}>{t.laterLabel}</span>
+            }
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+// ── Settings helper components (defined outside to avoid re-render issues) ──
+function SettingsSlider({ T, label, icon, min, max, step, value, onChange, unit, desc }) {
+  return (
+    <div style={{ padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+          <span style={{ fontSize:18 }}>{icon}</span>
+          <div>
+            <div style={{ fontSize:12, color:T.text }}>{label}</div>
+            {desc && <div style={{ fontSize:9, color:T.textDim, marginTop:2 }}>{desc}</div>}
+          </div>
+        </div>
+        <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:13, color:T.accent }}>{value}{unit}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ width:"100%", accentColor:T.accent, cursor:"pointer" }} />
+      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+        <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:T.textDim }}>{min}{unit}</span>
+        <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, color:T.textDim }}>{max}{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+function SettingsToggle({ T, icon, label, value, onToggle, desc }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+      <div style={{ display:"flex", gap:10, alignItems:"center", flex:1 }}>
+        <span style={{ fontSize:18 }}>{icon}</span>
+        <div>
+          <div style={{ fontSize:12, color:T.text }}>{label}</div>
+          {desc && <div style={{ fontSize:9, color:T.textDim, marginTop:2 }}>{desc}</div>}
+        </div>
+      </div>
+      <div onClick={onToggle} style={{ width:44, height:24, borderRadius:12, background:value?`linear-gradient(90deg,${T.accent},${T.accent}88)`:"rgba(255,255,255,0.12)", cursor:"pointer", position:"relative", transition:"all 0.25s", flexShrink:0, marginLeft:10 }}>
+        <div style={{ position:"absolute", top:2, left:value?22:2, width:20, height:20, borderRadius:"50%", background:"white", transition:"left 0.25s", boxShadow:"0 2px 6px rgba(0,0,0,0.3)" }} />
+      </div>
+    </div>
+  );
+}
+
+function SettingsSection({ T, id, title, emoji, activeSection, setActiveSection, children }) {
+  const open = activeSection === id;
+  return (
+    <div style={{ marginBottom:10 }}>
+      <button onClick={() => setActiveSection(open ? null : id)} style={{
+        width:"100%", background:open?`${T.accent}10`:T.surface,
+        border:open?`1px solid ${T.accent}30`:`1px solid ${T.border}`,
+        borderRadius:open?"14px 14px 0 0":"14px", padding:"13px 16px",
+        display:"flex", justifyContent:"space-between", alignItems:"center",
+        cursor:"pointer", transition:"all 0.2s",
+      }}>
+        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+          <span style={{ fontSize:20 }}>{emoji}</span>
+          <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:11, color:open?T.accent:T.text, letterSpacing:1 }}>{title}</span>
+        </div>
+        <span style={{ color:T.textDim, fontSize:16, display:"inline-block", transition:"transform 0.2s", transform:open?"rotate(180deg)":"rotate(0deg)" }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderTop:"none", borderRadius:"0 0 14px 14px", padding:"0 16px" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsScreen() {
+  const { T, t, theme, setTheme, settings, setSettings, xp, level, sessions, streak, points } = useApp();
+  const [history]        = useLS("fb_history", []);
+  const [showConfirm,  setShowConfirm]  = useState(false);
+  const [showResetXP,  setShowResetXP]  = useState(false);
+  const [activeSection, setActiveSection] = useState(null);
+
+  const totalMins = history.reduce((s, h) => s + (h.min || 0), 0);
+  const set = (key, val) => setSettings(s => ({...s, [key]: val}));
+  const tog = (key)      => setSettings(s => ({...s, [key]: !s[key]}));
+
+  const SP = { T, activeSection, setActiveSection }; // shorthand for section props
+
+  return (
+    <div style={{ padding:"16px 16px 100px" }}>
+      <h2 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:14, color:T.textMuted, letterSpacing:3, marginBottom:6 }}>AYARLAR</h2>
+      <p style={{ fontSize:10, color:T.textDim, marginBottom:18 }}>Bölüme dokunarak genişlet.</p>
+
+      {/* Profil kartı */}
+      <div style={{ background:`${T.accent}10`, border:`1px solid ${T.accent}25`, borderRadius:16, padding:16, marginBottom:16, display:"flex", gap:14, alignItems:"center" }}>
+        <div style={{ width:52, height:52, borderRadius:14, background:`${T.accent}20`, border:`1px solid ${T.accent}40`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:20, color:T.accent }}>{level}</span>
+        </div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:13, color:T.accent }}>{t.ranks[Math.min(level, t.ranks.length-1)]}</div>
+          <div style={{ fontSize:10, color:T.textMuted, marginTop:3 }}>{xp} XP · {sessions} seans · {totalMins} dk odak</div>
+          <div style={{ fontSize:10, color:T.textMuted, marginTop:1 }}>🔥 {streak} gün zincir · ⚡ {points} puan</div>
+        </div>
+      </div>
+
+      {/* 1 — Görünüm & Dil */}
+      <SettingsSection {...SP} id="appearance" title="GÖRÜNÜM & DİL" emoji="🎨">
+        <SettingsToggle T={T} icon="🌗" label={"Tema: "+(theme==="dark"?"Karanlık":"Aydınlık")} value={theme==="dark"} onToggle={()=>setTheme(th=>th==="dark"?"light":"dark")} desc="Gece/gündüz modu" />
+        <div style={{ padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:10 }}>
+            <span style={{ fontSize:18 }}>🌐</span>
+            <div style={{ fontSize:12, color:T.text }}>Dil / Language</div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            {[["tr","🇹🇷 Türkçe"],["en","🇬🇧 English"]].map(([lg,lbl])=>(
+              <button key={lg} onClick={()=>set("lang",lg)} style={{ flex:1, padding:"9px", borderRadius:10, cursor:"pointer", background:settings.lang===lg?`${T.accent}25`:"rgba(255,255,255,0.04)", border:settings.lang===lg?`1px solid ${T.accent}`:`1px solid ${T.border}`, color:settings.lang===lg?T.accent:T.textMuted, fontFamily:"'Orbitron',sans-serif", fontSize:11 }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:10 }}>
+            <span style={{ fontSize:18 }}>🎨</span>
+            <div style={{ fontSize:12, color:T.text }}>Vurgu Rengi</div>
+          </div>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {["#00e5ff","#00ff88","#ffd700","#ff6b35","#a78bfa","#ec4899","#38bdf8","#f59e0b"].map(c=>(
+              <button key={c} onClick={()=>set("accentColor",c)} style={{ width:32, height:32, borderRadius:"50%", background:c, border:(settings.accentColor||"#00e5ff")===c?"3px solid white":"3px solid transparent", cursor:"pointer", boxShadow:`0 0 10px ${c}60` }} />
+            ))}
+          </div>
+        </div>
+        <SettingsToggle T={T} icon="✨" label="Animasyonlar" value={settings.animations!==false} onToggle={()=>tog("animations")} desc="Geçiş efektleri" />
+        <SettingsToggle T={T} icon="🌟" label="Yıldız Arka Planı" value={settings.starsBg!==false} onToggle={()=>tog("starsBg")} desc="Karanlık modda arka plan yıldızları" />
+      </SettingsSection>
+
+      {/* 2 — Odak Ayarları */}
+      <SettingsSection {...SP} id="focus" title="ODAK AYARLARI" emoji="⏱️">
+        <SettingsSlider T={T} label="Varsayılan Odak Süresi" icon="⏱️" min={5} max={120} step={5} value={settings.defaultWork||25} onChange={v=>set("defaultWork",v)} unit="dk" desc="Seans başlarken önceden dolu gelir" />
+        <SettingsSlider T={T} label="Varsayılan Mola Süresi" icon="☕" min={1} max={30} step={1} value={settings.defaultBreak||5} onChange={v=>set("defaultBreak",v)} unit="dk" desc="Mola uzunluğu tercihi" />
+        <SettingsSlider T={T} label="Günlük Odak Hedefi" icon="🎯" min={30} max={480} step={30} value={settings.dailyGoal||120} onChange={v=>set("dailyGoal",v)} unit="dk" desc="Ana sayfa ve analitik hedef çubuğu" />
+        <SettingsToggle T={T} icon="💡" label="Seans Öncesi İlham" value={settings.quoteOnStart!==false} onToggle={()=>tog("quoteOnStart")} desc="Timer başlamadan motivasyon alıntısı" />
+        <SettingsToggle T={T} icon="🌿" label="Otomatik Mola" value={!!settings.autoBreak} onToggle={()=>tog("autoBreak")} desc="Seans bitince mola otomatik başlasın" />
+        <SettingsToggle T={T} icon="🔁" label="Sonsuz Döngü" value={!!settings.loopMode} onToggle={()=>tog("loopMode")} desc="Mola bitince yeni seans otomatik başlar" />
+      </SettingsSection>
+
+      {/* 3 — Ses & Titreşim */}
+      <SettingsSection {...SP} id="sound" title="SES & TİTREŞİM" emoji="🔊">
+        <SettingsToggle T={T} icon="🔊" label="Ses Efektleri" value={settings.sound!==false} onToggle={()=>tog("sound")} desc="Tıklama ve geçiş sesleri" />
+        <SettingsSlider T={T} label="Ses Seviyesi" icon="🎚️" min={0} max={100} step={10} value={settings.volume!==undefined?settings.volume:80} onChange={v=>set("volume",v)} unit="%" desc="Uygulama içi ses düzeyi" />
+        <SettingsToggle T={T} icon="📳" label="Titreşim" value={settings.vib!==false} onToggle={()=>tog("vib")} desc="Seans bitiş titreşimi" />
+        <SettingsToggle T={T} icon="🔔" label="Seans Bitiş Sesi" value={settings.doneSound!==false} onToggle={()=>tog("doneSound")} desc="Tamamlandığında özel ses çalar" />
+        <div style={{ padding:"13px 0" }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:10 }}>
+            <span style={{ fontSize:18 }}>🎶</span>
+            <div style={{ fontSize:12, color:T.text }}>Bitiş Sesi Tipi</div>
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            {[["bell","🔔 Zil"],["chime","🎵 Melodi"],["ping","⚡ Ping"],["none","🔇 Yok"]].map(([v,lbl])=>(
+              <button key={v} onClick={()=>set("soundType",v)} style={{ flex:1, padding:"8px 4px", borderRadius:8, cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:9, background:(settings.soundType||"bell")===v?`${T.accent}20`:"rgba(255,255,255,0.03)", border:(settings.soundType||"bell")===v?`1px solid ${T.accent}`:`1px solid ${T.border}`, color:(settings.soundType||"bell")===v?T.accent:T.textMuted }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+      </SettingsSection>
+
+      {/* 4 — Bildirimler */}
+      <SettingsSection {...SP} id="notif" title="BİLDİRİMLER" emoji="🔔">
+        <SettingsToggle T={T} icon="⏰" label="Günlük Hatırlatıcı" value={settings.dailyRem!==false} onToggle={()=>tog("dailyRem")} desc="Her gün uygulamayı açmayı hatırlat" />
+        <div style={{ padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:8 }}>
+            <span style={{ fontSize:18 }}>🕐</span>
+            <div style={{ fontSize:12, color:T.text }}>Hatırlatıcı Saati</div>
+          </div>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            {["07:00","08:00","09:00","10:00","19:00","20:00","21:00","22:00"].map(hr=>(
+              <button key={hr} onClick={()=>set("reminderHour",hr)} style={{ padding:"7px 10px", borderRadius:8, cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:10, background:(settings.reminderHour||"09:00")===hr?`${T.accent}20`:"rgba(255,255,255,0.03)", border:(settings.reminderHour||"09:00")===hr?`1px solid ${T.accent}`:`1px solid ${T.border}`, color:(settings.reminderHour||"09:00")===hr?T.accent:T.textMuted }}>{hr}</button>
+            ))}
+          </div>
+        </div>
+        <SettingsToggle T={T} icon="🎯" label="Odak Hatırlatması" value={settings.focusRem!==false} onToggle={()=>tog("focusRem")} desc="Uzun süre aktivite yoksa hatırlat" />
+        <SettingsToggle T={T} icon="🔥" label="Streak Uyarısı" value={settings.streakAlert!==false} onToggle={()=>tog("streakAlert")} desc="Streak kırılmak üzereyken uyar" />
+        <SettingsToggle T={T} icon="⭐" label="Seviye Atlama Bildirimi" value={settings.levelAlert!==false} onToggle={()=>tog("levelAlert")} desc="Rütbe değişiminde kutla" />
+        <SettingsToggle T={T} icon="🏆" label="Görev Tamamlama" value={settings.questAlert!==false} onToggle={()=>tog("questAlert")} desc="Görev tamamlandığında bildir" />
+      </SettingsSection>
+
+      {/* 5 — Gizlilik & Veri */}
+      <SettingsSection {...SP} id="privacy" title="GİZLİLİK & VERİ" emoji="🔐">
+        <SettingsToggle T={T} icon="📊" label="Anonim Analitik" value={!!settings.analytics} onToggle={()=>tog("analytics")} desc="Uygulama iyileştirme için anonim veri" />
+        <div style={{ padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+              <span style={{ fontSize:18 }}>💾</span>
+              <div>
+                <div style={{ fontSize:12, color:T.text }}>Geçmiş Limiti</div>
+                <div style={{ fontSize:9, color:T.textDim, marginTop:2 }}>Kaç seans saklansın</div>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:6 }}>
+              {[["50",50],["100",100],["∞",500]].map(([lbl,v])=>(
+                <button key={v} onClick={()=>set("historyLimit",v)} style={{ padding:"6px 10px", borderRadius:8, cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:10, background:(settings.historyLimit||50)===v?`${T.accent}20`:"rgba(255,255,255,0.03)", border:(settings.historyLimit||50)===v?`1px solid ${T.accent}`:`1px solid ${T.border}`, color:(settings.historyLimit||50)===v?T.accent:T.textMuted }}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ padding:"13px 0" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+              <span style={{ fontSize:18 }}>📤</span>
+              <div>
+                <div style={{ fontSize:12, color:T.text }}>Veriyi Dışa Aktar</div>
+                <div style={{ fontSize:9, color:T.textDim, marginTop:2 }}>JSON formatında indir</div>
+              </div>
+            </div>
+            <button onClick={()=>{
+              const data={};
+              for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);data[k]=localStorage.getItem(k);}
+              const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+              const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="focusbase_backup.json";a.click();
+            }} style={{ fontFamily:"'Orbitron',sans-serif", fontSize:10, color:T.accent, background:`${T.accent}15`, border:`1px solid ${T.accent}30`, borderRadius:8, padding:"7px 12px", cursor:"pointer" }}>
+              İNDİR
+            </button>
+          </div>
+        </div>
+      </SettingsSection>
+
+      {/* 6 — Erişilebilirlik */}
+      <SettingsSection {...SP} id="access" title="ERİŞİLEBİLİRLİK" emoji="♿">
+        <SettingsSlider T={T} label="Yazı Boyutu" icon="📝" min={80} max={130} step={10} value={settings.fontSize||100} onChange={v=>set("fontSize",v)} unit="%" desc="Arayüz metin ölçeği" />
+        <SettingsToggle T={T} icon="👁️" label="Yüksek Kontrast" value={!!settings.highContrast} onToggle={()=>tog("highContrast")} desc="Renk kontrastını artır" />
+        <SettingsToggle T={T} icon="🚫" label="Animasyonları Azalt" value={!!settings.reduceMotion} onToggle={()=>tog("reduceMotion")} desc="Hareket hassasiyeti için" />
+      </SettingsSection>
+
+      {/* 7 — Uygulama */}
+      <SettingsSection {...SP} id="about" title="UYGULAMA HAKKINDA" emoji="ℹ️">
+        <div style={{ padding:"13px 0", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}><span style={{ fontSize:18 }}>📱</span><span style={{ fontSize:12, color:T.text }}>Versiyon</span></div>
+          <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:12, color:T.accent }}>v4.0.0</span>
+        </div>
+        <div style={{ padding:"13px 0", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}><span style={{ fontSize:18 }}>⭐</span><span style={{ fontSize:12, color:T.text }}>Uygulamayı Değerlendir</span></div>
+          <span style={{ fontSize:16, color:T.textDim }}>›</span>
+        </div>
+        <div style={{ padding:"13px 0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}><span style={{ fontSize:18 }}>💬</span><span style={{ fontSize:12, color:T.text }}>Geri Bildirim Gönder</span></div>
+          <span style={{ fontSize:16, color:T.textDim }}>›</span>
+        </div>
+      </SettingsSection>
+
+      {/* Tehlikeli Bölge */}
+      <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, color:"rgba(255,80,80,0.6)", letterSpacing:2, marginBottom:10, marginTop:6 }}>⚠️ TEHLİKELİ BÖLGE</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        <button onClick={()=>setShowResetXP(v=>!v)} style={{ background:"rgba(255,165,0,0.08)", border:"1px solid rgba(255,165,0,0.25)", borderRadius:12, padding:"12px 16px", color:"rgba(255,165,0,0.8)", fontFamily:"'Orbitron',sans-serif", fontSize:11, cursor:"pointer", letterSpacing:1, textAlign:"left" }}>
+          ⭐ Sadece XP Sıfırla
+        </button>
+        {showResetXP && (
+          <div style={{ background:"rgba(255,165,0,0.08)", border:"1px solid rgba(255,165,0,0.3)", borderRadius:12, padding:14 }}>
+            <p style={{ fontSize:11, color:"rgba(255,200,100,0.9)", marginBottom:12, lineHeight:1.5 }}>XP ve Seviye sıfırlanacak. Seans geçmişi korunur.</p>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={()=>{ localStorage.removeItem("fb_xp"); setShowResetXP(false); window.location.reload(); }} style={{ flex:1, background:"rgba(255,165,0,0.2)", border:"1px solid rgba(255,165,0,0.4)", borderRadius:9, padding:"10px", color:"rgba(255,165,0,0.9)", cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:10 }}>SIFIRLA</button>
+              <button onClick={()=>setShowResetXP(false)} style={{ flex:1, background:T.surface, border:`1px solid ${T.border}`, borderRadius:9, padding:"10px", color:T.textMuted, cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:10 }}>İptal</button>
+            </div>
+          </div>
+        )}
+        <button onClick={()=>setShowConfirm(v=>!v)} style={{ background:"rgba(255,50,50,0.08)", border:"1px solid rgba(255,50,50,0.25)", borderRadius:12, padding:"12px 16px", color:"rgba(255,100,100,0.8)", fontFamily:"'Orbitron',sans-serif", fontSize:11, cursor:"pointer", letterSpacing:1, textAlign:"left" }}>
+          🗑️ Tüm Verileri Sil
+        </button>
+        {showConfirm && (
+          <div style={{ background:"rgba(255,50,50,0.1)", border:"1px solid rgba(255,50,50,0.3)", borderRadius:12, padding:14 }}>
+            <p style={{ color:"rgba(255,150,150,0.9)", fontSize:11, marginBottom:12, lineHeight:1.5 }}>Tüm veriler silinecek. Bu işlem geri alınamaz.</p>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={()=>{ localStorage.clear(); window.location.reload(); }} style={{ flex:1, background:"rgba(255,50,50,0.2)", border:"1px solid rgba(255,50,50,0.4)", borderRadius:9, padding:"10px", color:"rgba(255,100,100,0.9)", cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:11 }}>SİL</button>
+              <button onClick={()=>setShowConfirm(false)} style={{ flex:1, background:T.surface, border:`1px solid ${T.border}`, borderRadius:9, padding:"10px", color:T.textMuted, cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:11 }}>İptal</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ANALYTICS SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+function AnalyticsScreen() {
+  const { T, t, lang, xp, level, sessions, streak, baseEffects, settings } = useApp();
+  const [history]      = useLS("fb_history", []);
+  const [totalFocus]   = useLS("fb_totalFocus", 0);
+  const [playedGames]  = useLS("fb_playedGames3", {});
+  const [combo]        = useLS("fb_combo", 0);
+  const [distractors, setDistractors] = useLS("fb_distractors", { phone:0, noise:0, fatigue:0, hunger:0, other:0 });
+  const [activityStats] = useLS("fb_activity_stats", {});
+  const [tab, setTab]  = useState("overview");
+  const [reportRange, setReportRange] = useState("daily");
+  const [showDistModal, setShowDistModal] = useState(false);
+  const bfx = baseEffects || {};
+
+  const todayKey    = new Date().toDateString();
+  const todayMins   = history.filter(h => h.date === todayKey).reduce((s,h) => s+(h.min||0), 0);
+  const todaySessions = history.filter(h => h.date === todayKey).length;
+  const weekMins    = (() => { const d = new Date(); return history.filter(h => { const hd=new Date(h.date); return (d-hd)<7*864e5; }).reduce((s,h)=>s+(h.min||0),0); })();
+  const totalMins   = history.reduce((s,h) => s+(h.min||0), 0);
+
+  const mentalScore = useMemo(() => {
+    let s = 0;
+    s += Math.min(25, streak * 3);
+    s += Math.min(25, Math.floor(totalFocus / 10));
+    s += Math.min(20, sessions * 2);
+    s += Math.min(15, Math.floor(xp / 50));
+    s += Math.min(15, Math.floor((bfx.oxygenBonus || 0) / 5));
+    return Math.min(100, s);
+  }, [streak, totalFocus, sessions, xp, bfx.oxygenBonus]);
+
+  const mentalColor = mentalScore >= 85 ? "#00ff88" : mentalScore >= 65 ? "#00e5ff" : mentalScore >= 45 ? "#ffd700" : mentalScore >= 25 ? "#ff6b35" : "#a78bfa";
+  const mentalLabel = mentalScore >= 85 ? "DORUK" : mentalScore >= 65 ? "GÜÇLÜ" : mentalScore >= 45 ? "GELİŞİYOR" : mentalScore >= 25 ? "UYANIK" : "BAŞLANGIÇ";
+
+  const hourlyData = useMemo(() => {
+    const counts = Array(24).fill(0);
+    history.forEach(h => {
+      if (h.at) { const hr = parseInt((h.at||"").split(":")[0]); if (!isNaN(hr) && hr >= 0 && hr < 24) counts[hr] += (h.min||25); }
+    });
+    return counts;
+  }, [history]);
+
+  const peakHour  = hourlyData.reduce((best,v,i) => v > hourlyData[best] ? i : best, 0);
+  const peakLabel = peakHour < 6 ? "Gece" : peakHour < 12 ? "Sabah" : peakHour < 18 ? "Öğleden Sonra" : "Akşam";
+
+  const last14 = useMemo(() => Array.from({length:14}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()-13+i);
+    const key = d.toDateString();
+    const mins = history.filter(h=>h.date===key).reduce((s,h)=>s+(h.min||0),0);
+    const dayN = (d.getDay()+6)%7;
+    return { day:["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"][dayN], mins, key, isToday:i===13 };
+  }), [history]);
+
+  const last7 = last14.slice(7);
+  const maxMins14 = Math.max(...last14.map(d=>d.mins),1);
+  const prevWeekMins = last14.slice(0,7).reduce((s,d)=>s+d.mins,0);
+  const weekTrend = prevWeekMins > 0 ? Math.round(((weekMins-prevWeekMins)/prevWeekMins)*100) : 0;
+
+  const focusRings = useMemo(() => {
+    const total = history.length || 1;
+    return [
+      { label:"Kısa (<25dk)",  color:"#a78bfa", pct:Math.round((history.filter(h=>(h.min||0)<25).length/total)*100),  count:history.filter(h=>(h.min||0)<25).length },
+      { label:"Orta (25-44dk)",color:"#00e5ff", pct:Math.round((history.filter(h=>(h.min||0)>=25&&(h.min||0)<45).length/total)*100), count:history.filter(h=>(h.min||0)>=25&&(h.min||0)<45).length },
+      { label:"Derin (45+dk)", color:"#00ff88", pct:Math.round((history.filter(h=>(h.min||0)>=45).length/total)*100),  count:history.filter(h=>(h.min||0)>=45).length },
+    ];
+  }, [history]);
+
+  const trendPath = useMemo(() => {
+    if (last14.every(d=>d.mins===0)) return null;
+    const W=340, H=80, max=Math.max(...last14.map(d=>d.mins),1);
+    const pts = last14.map((d,i) => { const x=(i/13)*(W-20)+10; const y=H-10-((d.mins/max)*(H-20)); return [x,y]; });
+    const path = pts.map((p,i) => { if(i===0) return `M${p[0]} ${p[1]}`; const prev=pts[i-1]; const cpx=(prev[0]+p[0])/2; return `C${cpx} ${prev[1]} ${cpx} ${p[1]} ${p[0]} ${p[1]}`; }).join(" ");
+    const fill = `M${pts[0][0]} ${H} `+pts.map(p=>`L${p[0]} ${p[1]}`).join(" ")+` L${pts[pts.length-1][0]} ${H} Z`;
+    return { path, fill, pts };
+  }, [last14]);
+
+  const qualityScore = useMemo(() => {
+    if (!history.length) return 0;
+    const avgMin = totalFocus / Math.max(sessions,1);
+    const consistency = last7.filter(d=>d.mins>0).length/7;
+    const deepPct = focusRings[2].pct/100;
+    return Math.min(100, Math.round((Math.min(avgMin/60,1)*40)+(consistency*35)+(deepPct*25)));
+  }, [history, totalFocus, sessions, last7, focusRings]);
+
+  const qualityColor = qualityScore >= 80 ? "#00ff88" : qualityScore >= 55 ? "#00e5ff" : qualityScore >= 30 ? "#ffd700" : "#ff6b35";
+  const qualityLabel = qualityScore >= 80 ? "ELİT" : qualityScore >= 55 ? "GÜÇLÜ" : qualityScore >= 30 ? "GELİŞİYOR" : "BAŞLANGIÇ";
+
+  const distItems = [
+    { key:"phone",   label:"Telefon",   icon:"📱", color:"#ff6b35" },
+    { key:"noise",   label:"Gürültü",   icon:"🔊", color:"#ffd700" },
+    { key:"fatigue", label:"Yorgunluk", icon:"😴", color:"#a78bfa" },
+    { key:"hunger",  label:"Açlık",     icon:"🍎", color:"#22c55e" },
+    { key:"other",   label:"Diğer",     icon:"❓", color:"#94a3b8" },
+  ];
+  const totalDist = Object.values(distractors).reduce((s,v)=>s+v,0);
+  const maxDist   = Math.max(...Object.values(distractors),1);
+
+  const dailyGoal = settings.dailyGoal || 120;
+  const goalPct   = Math.min(100, Math.round((todayMins/dailyGoal)*100));
+  const goalColor = goalPct>=100?"#00ff88":goalPct>=60?"#ffd700":T.accent;
+
+  const report = useMemo(() => {
+    if (reportRange==="daily") return {
+      title:"GÜNLÜK RAPOR",
+      period:new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"}),
+      stats:[
+        {label:"Bugün Odak",  value:todayMins+"dk",   icon:"⏱️"},
+        {label:"Tamamlanan",  value:todaySessions+"s",  icon:"🎯"},
+        {label:"Zihin Skoru", value:mentalScore+"/100", icon:"🧠"},
+        {label:"Streak",      value:streak+" gün",     icon:"🔥"},
+      ],
+      insight:todayMins>=120?"Harika bir gün! Zihnin keskin çalışıyor.":todayMins>=60?"İyi performans.":todayMins>0?"Başlangıç yapıldı.":"Bugün henüz seans yok.",
+    };
+    if (reportRange==="weekly") return {
+      title:"HAFTALIK RAPOR", period:"Son 7 Gün",
+      stats:[
+        {label:"Toplam Odak", value:weekMins+"dk",                            icon:"⏱️"},
+        {label:"Ort. Günlük", value:Math.round(weekMins/7)+"dk/gün",          icon:"📊"},
+        {label:"Aktif Gün",   value:last7.filter(d=>d.mins>0).length+"/7",    icon:"📅"},
+        {label:"Hafta Trend", value:(weekTrend>=0?"+":"")+weekTrend+"%",      icon:weekTrend>=0?"📈":"📉"},
+      ],
+      insight:weekMins>=600?"İstisnayi bir hafta!":weekMins>=300?"Güçlü bir hafta.":weekMins>=120?"Ortalama bir hafta.":"Hafif bir hafta.",
+    };
+    return {
+      title:"AYLIK RAPOR",
+      period:new Date().toLocaleDateString("tr-TR",{month:"long",year:"numeric"}),
+      stats:[
+        {label:"Toplam Odak",  value:totalFocus+"dk",   icon:"⏱️"},
+        {label:"Toplam Seans", value:sessions+"s",       icon:"🎯"},
+        {label:"Kazanılan XP", value:xp+" XP",           icon:"⭐"},
+        {label:"Odak Kalite",  value:qualityScore+"/100",icon:"💎"},
+      ],
+      insight:sessions>=50?"Bir aylık inanılmaz birikim!":sessions>=20?"Güçlü bir ay.":sessions>=5?"İyi başlangıç.":"Yolculuk başlıyor.",
+    };
+  }, [reportRange, todayMins, todaySessions, mentalScore, streak, weekMins, weekTrend, totalFocus, sessions, xp, qualityScore]);
+
+  return (
+    <div style={{ padding:"16px 16px 100px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+        <h2 style={{ ...orb, fontSize:14, color:T.textMuted, letterSpacing:3 }}>ANALİTİK MERKEZİ</h2>
+        <button onClick={()=>setShowDistModal(!showDistModal)} style={{ background:"rgba(255,107,53,0.15)", border:"1px solid rgba(255,107,53,0.3)", borderRadius:10, padding:"7px 12px", color:"#ff6b35", cursor:"pointer", ...orb, fontSize:9, letterSpacing:1 }}>⚠️ DİKKAT</button>
+      </div>
+
+      {showDistModal && (
+        <div style={{ background:"rgba(255,107,53,0.08)", border:"1px solid rgba(255,107,53,0.3)", borderRadius:16, padding:16, marginBottom:14 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12 }}>
+            <div style={{ ...orb, fontSize:10, color:"#ff6b35" }}>DİKKAT DAĞITICILARI KAYDET</div>
+            <button onClick={()=>setShowDistModal(false)} style={{ background:"none", border:"none", color:T.textDim, fontSize:18, cursor:"pointer" }}>×</button>
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+            {distItems.map(item => (
+              <button key={item.key} onClick={()=>setDistractors(d=>({...d,[item.key]:(d[item.key]||0)+1}))} style={{ background:`${item.color}15`, border:`1px solid ${item.color}40`, borderRadius:12, padding:"8px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ fontSize:18 }}>{item.icon}</span>
+                <div style={{ textAlign:"left" }}>
+                  <div style={{ ...orb, fontSize:9, color:item.color }}>{item.label}</div>
+                  <div style={{ ...orb, fontSize:8, color:T.textDim }}>×{distractors[item.key]||0}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display:"flex", gap:6, marginBottom:18, overflowX:"auto" }}>
+        {[["overview","🧠 Genel"],["trends","📈 Trend"],["quality","💎 Kalite"],["report","📋 Rapor"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{ flexShrink:0, padding:"8px 14px", borderRadius:10, cursor:"pointer", background:tab===id?`linear-gradient(135deg,${T.accent},${T.accent}88)`:"rgba(255,255,255,0.04)", border:tab===id?"none":`1px solid ${T.border}`, color:tab===id?"#050a14":T.textMuted, ...orb, fontSize:10, letterSpacing:1, whiteSpace:"nowrap" }}>{label}</button>
+        ))}
+      </div>
+
+      {tab==="overview" && (
+        <>
+          {/* Mental Score */}
+          <div style={{ background:`${mentalColor}15`, border:`1px solid ${mentalColor}35`, borderRadius:20, padding:20, marginBottom:14, textAlign:"center" }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:3, marginBottom:12 }}>ZİHİNSEL DURUM SKORU</div>
+            <div style={{ position:"relative", width:130, height:130, margin:"0 auto 14px" }}>
+              <svg width={130} height={130} style={{ transform:"rotate(-90deg)" }}>
+                <circle cx={65} cy={65} r={52} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={10}/>
+                <circle cx={65} cy={65} r={52} fill="none" stroke={mentalColor} strokeWidth={10} strokeLinecap="round"
+                  strokeDasharray={2*Math.PI*52} strokeDashoffset={2*Math.PI*52*(1-mentalScore/100)}
+                  style={{ filter:`drop-shadow(0 0 8px ${mentalColor})` }}/>
+              </svg>
+              <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ ...orb, fontSize:30, color:mentalColor, lineHeight:1 }}>{mentalScore}</div>
+                <div style={{ ...orb, fontSize:9, color:mentalColor, letterSpacing:2, marginTop:4 }}>{mentalLabel}</div>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+              {[{label:"Streak",value:streak,icon:"🔥",color:"#ff6b35"},{label:"Seans",value:sessions,icon:"🎯",color:"#00e5ff"},{label:"XP",value:xp,icon:"⭐",color:"#ffd700"}].map(item=>(
+                <div key={item.label} style={{ flex:1, background:"rgba(0,0,0,0.2)", borderRadius:12, padding:"10px 6px", textAlign:"center" }}>
+                  <div style={{ fontSize:16, marginBottom:4 }}>{item.icon}</div>
+                  <div style={{ ...orb, fontSize:14, color:item.color }}>{item.value}</div>
+                  <div style={{ ...orb, fontSize:7, color:T.textDim, marginTop:2 }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Daily Goal */}
+          <div style={{ background:`${goalColor}10`, border:`1px solid ${goalColor}30`, borderRadius:16, padding:16, marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2 }}>GÜNLÜK ODAK HEDEFİ</div>
+              <span style={{ ...orb, fontSize:11, color:goalColor }}>{goalPct>=100?"✓ TAMAMLANDI":`${dailyGoal-todayMins}dk kaldı`}</span>
+            </div>
+            <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:8, height:10, overflow:"hidden", marginBottom:8 }}>
+              <div style={{ height:"100%", width:`${goalPct}%`, background:`linear-gradient(90deg,${goalColor},${goalColor}88)`, borderRadius:8, transition:"width 0.8s ease" }}/>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <span style={{ ...orb, fontSize:10, color:T.text }}>{todayMins}dk odaklandın</span>
+              <span style={{ ...orb, fontSize:10, color:T.textDim }}>Hedef: {dailyGoal}dk</span>
+            </div>
+          </div>
+
+          {/* Difficulty breakdown */}
+          {history.length>0 && (
+            <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:14 }}>ZORLUK DAĞILIMI</div>
+              <div style={{ display:"flex", gap:10 }}>
+                {[{label:"Kolay",color:"#00ff88",count:history.filter(h=>h.difficulty===1||!h.difficulty).length},{label:"Orta",color:"#ffd700",count:history.filter(h=>h.difficulty===2).length},{label:"Zor",color:"#ff6b35",count:history.filter(h=>h.difficulty===3).length}].map(item=>{
+                  const pct = history.length?Math.round((item.count/history.length)*100):0;
+                  return <div key={item.label} style={{ flex:1, background:`${item.color}10`, border:`1px solid ${item.color}30`, borderRadius:12, padding:"12px 8px", textAlign:"center" }}>
+                    <div style={{ ...orb, fontSize:20, color:item.color, lineHeight:1, marginBottom:4 }}>{item.count}</div>
+                    <div style={{ ...orb, fontSize:8, color:T.textDim }}>{item.label}</div>
+                    <div style={{ ...orb, fontSize:10, color:item.color, marginTop:4 }}>%{pct}</div>
+                  </div>;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 30-day heatmap */}
+          {history.length>0 && (
+            <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>30 GÜNLÜK ODAK HARİTASI</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(10,1fr)", gap:4 }}>
+                {Array.from({length:30},(_,i)=>{
+                  const d=new Date(); d.setDate(d.getDate()-29+i);
+                  const key=d.toDateString();
+                  const mins=history.filter(h=>h.date===key).reduce((s,h)=>s+(h.min||0),0);
+                  const intensity=mins>0?Math.min(1,mins/120):0;
+                  const isToday=i===29;
+                  return <div key={i} style={{ aspectRatio:"1", borderRadius:4, background:isToday?T.accent:mins>0?`rgba(0,229,255,${0.15+intensity*0.7})`:"rgba(255,255,255,0.05)", border:isToday?`1px solid ${T.accent}`:"none" }}/>;
+                })}
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                <span style={{ ...orb, fontSize:7, color:T.textDim }}>30 gün önce</span>
+                <span style={{ ...orb, fontSize:7, color:T.accent }}>Bugün</span>
+              </div>
+            </div>
+          )}
+
+          {/* Hourly heatmap */}
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>SAATLIK VERİMLİLİK HARİTASI</div>
+            {hourlyData.some(v=>v>0) ? (
+              <>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:2, height:60, marginBottom:6 }}>
+                  {hourlyData.map((val,hour)=>{
+                    const maxV=Math.max(...hourlyData,1);
+                    const h=Math.max(2,(val/maxV)*54);
+                    const isPeak=hour===peakHour&&val>0;
+                    return <div key={hour} style={{ flex:1, height:h, borderRadius:"2px 2px 0 0", background:isPeak?"#00e5ff":val>0?`rgba(0,229,255,${0.12+(val/maxV)*0.55})`:"rgba(255,255,255,0.04)", boxShadow:isPeak?"0 0 10px rgba(0,229,255,0.7)":"none", transition:"height 0.6s ease" }}/>;
+                  })}
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between" }}>
+                  {[0,6,12,18,23].map(h=><span key={h} style={{ ...orb, fontSize:7, color:T.textDim }}>{h}:00</span>)}
+                </div>
+                <div style={{ marginTop:10, padding:"8px 12px", background:"rgba(0,229,255,0.08)", borderRadius:10, border:"1px solid rgba(0,229,255,0.2)", display:"flex", justifyContent:"space-between" }}>
+                  <span style={{ fontSize:11, color:T.textMuted }}>⚡ En verimli saat</span>
+                  <span style={{ color:"#00e5ff", ...orb, fontSize:11 }}>{peakHour}:00 · {peakLabel}</span>
+                </div>
+              </>
+            ) : (
+              <p style={{ fontSize:12, color:T.textDim, textAlign:"center", padding:"16px 0" }}>Seans tamamlandıkça harita oluşacak.</p>
+            )}
+          </div>
+
+          {/* Focus depth rings */}
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:14 }}>ODAK DERİNLİĞİ DAĞILIMI</div>
+            <div style={{ display:"flex", gap:16, alignItems:"center" }}>
+              <div style={{ position:"relative", width:96, height:96, flexShrink:0 }}>
+                <svg width={96} height={96} style={{ transform:"rotate(-90deg)" }}>
+                  {focusRings.map((ring,i)=>{
+                    const r=40-i*12; const circ=2*Math.PI*r;
+                    return <g key={ring.label}>
+                      <circle cx={48} cy={48} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={9}/>
+                      <circle cx={48} cy={48} r={r} fill="none" stroke={ring.color} strokeWidth={9} strokeLinecap="round"
+                        strokeDasharray={circ} strokeDashoffset={circ*(1-ring.pct/100)}
+                        style={{ filter:`drop-shadow(0 0 4px ${ring.color}80)` }}/>
+                    </g>;
+                  })}
+                </svg>
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ ...orb, fontSize:11, color:T.textMuted }}>{history.length}s</span>
+                </div>
+              </div>
+              <div style={{ flex:1 }}>
+                {focusRings.map(ring=>(
+                  <div key={ring.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                    <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                      <div style={{ width:8, height:8, borderRadius:"50%", background:ring.color, boxShadow:`0 0 6px ${ring.color}` }}/>
+                      <div>
+                        <div style={{ fontSize:10, color:T.textMuted }}>{ring.label}</div>
+                        <div style={{ ...orb, fontSize:8, color:T.textDim }}>{ring.count} seans</div>
+                      </div>
+                    </div>
+                    <span style={{ ...orb, fontSize:14, color:ring.color }}>{ring.pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Activity breakdown */}
+          {Object.keys(activityStats).length>0 && (
+            <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:14 }}>AKTİVİTE DAĞILIMI</div>
+              {Object.entries(activityStats).sort((a,b)=>b[1].mins-a[1].mins).slice(0,5).map(([id,st])=>{
+                const ACTS=[{id:"study",icon:"📚",label:"Ders",color:"#00e5ff"},{id:"work",icon:"💼",label:"İş",color:"#7c3aed"},{id:"reading",icon:"📖",label:"Okuma",color:"#f59e0b"},{id:"coding",icon:"💻",label:"Kod",color:"#00ff88"},{id:"writing",icon:"✍️",label:"Yazı",color:"#ec4899"},{id:"language",icon:"🌍",label:"Dil",color:"#38bdf8"},{id:"research",icon:"🔬",label:"Araştırma",color:"#ff6b35"},{id:"creative",icon:"🎨",label:"Yaratıcı",color:"#a78bfa"},{id:"exercise",icon:"🏃",label:"Egzersiz",color:"#22c55e"},{id:"planning",icon:"🗓️",label:"Planlama",color:"#ffd700"},{id:"other",icon:"⚡",label:"Diğer",color:"#94a3b8"}];
+                const a=ACTS.find(x=>x.id===id)||ACTS[ACTS.length-1];
+                const maxM=Math.max(...Object.values(activityStats).map(x=>x.mins),1);
+                return (
+                  <div key={id} style={{ marginBottom:12 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+                      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                        <span style={{ fontSize:16 }}>{a.icon}</span>
+                        <div>
+                          <div style={{ fontSize:11, color:T.text }}>{a.label}</div>
+                          <div style={{ ...orb, fontSize:8, color:T.textDim }}>{st.count} seans · {st.mins}dk</div>
+                        </div>
+                      </div>
+                      <span style={{ ...orb, fontSize:12, color:a.color }}>{Math.round((st.mins/Math.max(totalFocus,1))*100)}%</span>
+                    </div>
+                    <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:5, height:5, overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${(st.mins/maxM)*100}%`, background:a.color, borderRadius:5, transition:"width 0.8s ease" }}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Distractors */}
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2 }}>DİKKAT DAĞITICILARI</div>
+              <span style={{ ...orb, fontSize:9, color:"#ff6b35" }}>toplam: {totalDist}</span>
+            </div>
+            {totalDist===0 ? (
+              <p style={{ fontSize:11, color:T.textDim, textAlign:"center", padding:"12px 0" }}>⚠️ butonu ile kaydet.</p>
+            ) : distItems.map(item=>{
+              const val=distractors[item.key]||0;
+              if(!val) return null;
+              return (
+                <div key={item.key} style={{ marginBottom:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                    <span style={{ fontSize:12 }}>{item.icon} <span style={{ color:T.textMuted, fontSize:11 }}>{item.label}</span></span>
+                    <span style={{ ...orb, fontSize:10, color:item.color }}>×{val}</span>
+                  </div>
+                  <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:6, height:6, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${(val/maxDist)*100}%`, background:item.color, borderRadius:6, transition:"width 0.8s ease" }}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab==="trends" && (
+        <>
+          {/* SVG Line Chart */}
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2 }}>14 GÜNLÜK ODAK TRENDİ</div>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ ...orb, fontSize:10, color:weekTrend>=0?"#00ff88":"#ff6b35" }}>{weekTrend>=0?"↑":"↓"}{Math.abs(weekTrend)}%</span>
+                <span style={{ ...orb, fontSize:8, color:T.textDim }}>geçen hafta</span>
+              </div>
+            </div>
+            {trendPath ? (
+              <div>
+                <svg width="100%" height={90} viewBox="0 0 340 90" style={{ overflow:"visible" }}>
+                  <defs>
+                    <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={T.accent} stopOpacity="0.3"/>
+                      <stop offset="100%" stopColor={T.accent} stopOpacity="0.02"/>
+                    </linearGradient>
+                  </defs>
+                  <path d={trendPath.fill} fill="url(#trendFill)"/>
+                  <path d={trendPath.path} fill="none" stroke={T.accent} strokeWidth={2} strokeLinecap="round" style={{ filter:`drop-shadow(0 0 4px ${T.accent})` }}/>
+                  {trendPath.pts.map((p,i)=>{
+                    const d=last14[i];
+                    if(!d.mins) return null;
+                    return <circle key={i} cx={p[0]} cy={p[1]} r={d.isToday?5:3} fill={d.isToday?T.accent:"rgba(0,229,255,0.6)"} stroke={d.isToday?"white":"none"} strokeWidth={1.5}/>;
+                  })}
+                </svg>
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+                  {last14.filter((_,i)=>i%2===0).map((d,i)=>(
+                    <span key={i} style={{ ...orb, fontSize:7, color:d.isToday?T.accent:T.textDim }}>{d.day}</span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize:12, color:T.textDim, textAlign:"center", padding:"20px 0" }}>Grafik için seans tamamla.</p>
+            )}
+          </div>
+
+          {/* Bar chart */}
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:14 }}>7 GÜNLÜK DAKİKA DAĞILIMI</div>
+            <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:100, marginBottom:8 }}>
+              {last7.map((d,i)=>{
+                const maxV=Math.max(...last7.map(x=>x.mins),1);
+                const h=d.mins>0?Math.max(4,(d.mins/maxV)*90):4;
+                return (
+                  <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                    {d.mins>0&&<span style={{ ...orb, fontSize:7, color:d.isToday?T.accent:T.textDim }}>{d.mins}</span>}
+                    <div style={{ width:"100%", height:h, borderRadius:"4px 4px 0 0", background:d.isToday?`linear-gradient(to top,${T.accent},${T.accent}88)`:d.mins>0?"rgba(0,229,255,0.3)":"rgba(255,255,255,0.04)", boxShadow:d.isToday?`0 0 12px ${T.accent}50`:"none", transition:"height 0.6s ease" }}/>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display:"flex", gap:6 }}>
+              {last7.map((d,i)=>(<div key={i} style={{ flex:1, textAlign:"center", ...orb, fontSize:7, color:d.isToday?T.accent:T.textDim }}>{d.day}</div>))}
+            </div>
+          </div>
+
+          {/* XP Growth */}
+          <div style={{ background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.25)", borderRadius:16, padding:16, marginBottom:14 }}>
+            <div style={{ ...orb, fontSize:9, color:"rgba(167,139,250,0.7)", letterSpacing:2, marginBottom:12 }}>XP & SEVİYE</div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <div><div style={{ ...orb, fontSize:28, color:"#a78bfa" }}>{xp}</div><div style={{ ...orb, fontSize:9, color:T.textDim }}>TOPLAM XP</div></div>
+              <div style={{ textAlign:"center" }}><div style={{ ...orb, fontSize:28, color:"#ffd700" }}>{level}</div><div style={{ ...orb, fontSize:9, color:T.textDim }}>SEVİYE</div></div>
+              <div style={{ textAlign:"right" }}><div style={{ ...orb, fontSize:28, color:"#00ff88" }}>{combo}</div><div style={{ ...orb, fontSize:9, color:T.textDim }}>EN UZUN KOMBO</div></div>
+            </div>
+          </div>
+
+          {/* Records */}
+          <div style={{ display:"flex", gap:10 }}>
+            {[{icon:"⏱️",label:"EN UZUN SEANS",value:(history.length>0?Math.max(...history.map(h=>h.min||0)):0)+"dk",color:"#00e5ff"},{icon:"📅",label:"HAFTALİK AKTİF GÜN",value:last7.filter(d=>d.mins>0).length+"/7",color:"#ffd700"},{icon:"🔥",label:"STREAK",value:streak+"g",color:"#ff6b35"}].map(item=>(
+              <div key={item.label} style={{ flex:1, background:`${item.color}10`, border:`1px solid ${item.color}25`, borderRadius:14, padding:14, textAlign:"center" }}>
+                <div style={{ fontSize:24, marginBottom:6 }}>{item.icon}</div>
+                <div style={{ ...orb, fontSize:18, color:item.color }}>{item.value}</div>
+                <div style={{ ...orb, fontSize:7, color:T.textDim, marginTop:4, letterSpacing:1 }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab==="quality" && (
+        <>
+          {/* Quality Score */}
+          <div style={{ background:`${qualityColor}15`, border:`1px solid ${qualityColor}35`, borderRadius:20, padding:20, marginBottom:14, textAlign:"center" }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:3, marginBottom:12 }}>ODAK KALİTE SKORU</div>
+            <div style={{ position:"relative", width:130, height:130, margin:"0 auto 14px" }}>
+              <svg width={130} height={130} style={{ transform:"rotate(-90deg)" }}>
+                <circle cx={65} cy={65} r={52} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={10}/>
+                <circle cx={65} cy={65} r={52} fill="none" stroke={qualityColor} strokeWidth={10} strokeLinecap="round"
+                  strokeDasharray={2*Math.PI*52} strokeDashoffset={2*Math.PI*52*(1-qualityScore/100)}
+                  style={{ filter:`drop-shadow(0 0 8px ${qualityColor})` }}/>
+              </svg>
+              <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ ...orb, fontSize:30, color:qualityColor, lineHeight:1 }}>{qualityScore}</div>
+                <div style={{ ...orb, fontSize:9, color:qualityColor, letterSpacing:2, marginTop:4 }}>{qualityLabel}</div>
+              </div>
+            </div>
+            <p style={{ fontSize:12, color:T.textMuted, lineHeight:1.6 }}>
+              {qualityScore>=80?"Odak kalitenin zirvesi.":qualityScore>=55?"Güçlü odak. Daha uzun seanslarla yukarı.":qualityScore>=30?"Gelişiyor. Tutarlılık üzerinde çalış.":"Başlangıç. Her seans sistemi güçlendirir."}
+            </p>
+          </div>
+          {/* Quality Breakdown */}
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:14 }}>KALİTE BİLEŞENLERİ</div>
+            {[
+              {label:"Ort. Seans Süresi",icon:"⏱️",val:Math.round(totalFocus/Math.max(sessions,1)),max:60,unit:"dk",color:"#00e5ff",weight:"40%"},
+              {label:"Haftalık Tutarlılık",icon:"📅",val:last7.filter(d=>d.mins>0).length,max:7,unit:"/7gün",color:"#00ff88",weight:"35%"},
+              {label:"Derin Seans Oranı",icon:"🔬",val:focusRings[2].pct,max:100,unit:"%",color:"#ffd700",weight:"25%"},
+            ].map(item=>(
+              <div key={item.label} style={{ marginBottom:14 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <span style={{ fontSize:16 }}>{item.icon}</span>
+                    <div>
+                      <div style={{ fontSize:11, color:T.text }}>{item.label}</div>
+                      <div style={{ ...orb, fontSize:8, color:T.textDim }}>ağırlık: {item.weight}</div>
+                    </div>
+                  </div>
+                  <span style={{ ...orb, fontSize:14, color:item.color }}>{item.val}{item.unit}</span>
+                </div>
+                <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:8, height:8, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${Math.min(100,(item.val/item.max)*100)}%`, background:`linear-gradient(90deg,${item.color},${item.color}88)`, borderRadius:8, transition:"width 0.8s ease" }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Attention Risk */}
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16 }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>DİKKAT RİSK ANALİZİ</div>
+            {[{time:"09:00 – 10:30",risk:sessions>2?72:sessions>0?45:0,label:"Sabah Geçiş"},{time:"13:00 – 14:30",risk:sessions>2?58:sessions>0?35:0,label:"Öğle Sonrası"},{time:"17:00 – 18:30",risk:sessions>2?48:sessions>0?28:0,label:"Gün Sonu"}].map(item=>(
+              <div key={item.time} style={{ marginBottom:10 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                  <span style={{ fontSize:11, color:T.textMuted }}>{item.time} · {item.label}</span>
+                  <span style={{ ...orb, fontSize:9, color:item.risk>60?"#ff6b35":item.risk>30?"#ffd700":"#00ff88" }}>{item.risk>60?"YÜKSEK":item.risk>30?"ORTA":sessions>0?"DÜŞÜK":"VERİ YOK"}</span>
+                </div>
+                <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:6, height:5, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${item.risk}%`, background:item.risk>60?"#ff6b35":item.risk>30?"#ffd700":"#00ff88", borderRadius:6, transition:"width 0.8s ease" }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab==="report" && (
+        <>
+          <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+            {[["daily","Günlük"],["weekly","Haftalık"],["monthly","Aylık"]].map(([id,label])=>(
+              <button key={id} onClick={()=>setReportRange(id)} style={{ flex:1, padding:"9px 0", borderRadius:10, cursor:"pointer", background:reportRange===id?"linear-gradient(135deg,#ffd700,#ff6b35)":"rgba(255,255,255,0.04)", border:reportRange===id?"none":`1px solid ${T.border}`, color:reportRange===id?"#050a14":T.textMuted, ...orb, fontSize:10, letterSpacing:1 }}>{label}</button>
+            ))}
+          </div>
+          <div style={{ background:"linear-gradient(135deg,rgba(255,215,0,0.1),rgba(255,107,53,0.06))", border:"1px solid rgba(255,215,0,0.25)", borderRadius:20, padding:20, marginBottom:14 }}>
+            <div style={{ ...orb, fontSize:10, color:"#ffd700", letterSpacing:3, marginBottom:4 }}>{report.title}</div>
+            <div style={{ fontSize:11, color:T.textMuted, marginBottom:18 }}>{report.period}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+              {report.stats.map(s=>(
+                <div key={s.label} style={{ background:"rgba(0,0,0,0.2)", borderRadius:12, padding:"12px 10px", textAlign:"center" }}>
+                  <div style={{ fontSize:22, marginBottom:4 }}>{s.icon}</div>
+                  <div style={{ ...orb, fontSize:14, color:"#ffd700" }}>{s.value}</div>
+                  <div style={{ ...orb, fontSize:8, color:T.textDim, marginTop:3 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background:"rgba(0,0,0,0.2)", borderRadius:12, padding:"12px 14px", borderLeft:"3px solid #ffd700" }}>
+              <div style={{ ...orb, fontSize:8, color:"#ffd700", letterSpacing:2, marginBottom:6 }}>🤖 YAPAY ZEKA YORUMU</div>
+              <p style={{ fontSize:12, color:T.text, lineHeight:1.7 }}>{report.insight}</p>
+            </div>
+          </div>
+          <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:16, padding:16 }}>
+            <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:12 }}>SON SEANSLAR</div>
+            {history.length===0 ? (
+              <p style={{ fontSize:12, color:T.textDim, textAlign:"center", padding:"12px 0" }}>Henüz seans yok.</p>
+            ) : history.slice(0,10).map((h,i)=>{
+              const ACTS=[{id:"study",icon:"📚",label:"Ders",color:"#00e5ff"},{id:"work",icon:"💼",label:"İş",color:"#7c3aed"},{id:"reading",icon:"📖",label:"Okuma",color:"#f59e0b"},{id:"coding",icon:"💻",label:"Kod",color:"#00ff88"},{id:"writing",icon:"✍️",label:"Yazı",color:"#ec4899"},{id:"language",icon:"🌍",label:"Dil",color:"#38bdf8"},{id:"research",icon:"🔬",label:"Araştırma",color:"#ff6b35"},{id:"creative",icon:"🎨",label:"Yaratıcı",color:"#a78bfa"},{id:"exercise",icon:"🏃",label:"Egzersiz",color:"#22c55e"},{id:"planning",icon:"🗓️",label:"Planlama",color:"#ffd700"},{id:"other",icon:"⚡",label:"Diğer",color:"#94a3b8"}];
+              const a=ACTS.find(x=>x.id===h.activity)||ACTS[ACTS.length-1];
+              return (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${T.border}` }}>
+                  <div style={{ display:"flex", gap:9, alignItems:"center" }}>
+                    <div style={{ width:32, height:32, borderRadius:9, background:`${a.color}18`, border:`1px solid ${a.color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>{a.icon}</div>
+                    <div>
+                      <div style={{ ...orb, fontSize:11, color:T.text }}>{h.min}dk · {a.label}</div>
+                      {h.topic&&<div style={{ fontSize:9, color:a.color }}>📌 {h.topic}</div>}
+                      <div style={{ fontSize:8, color:T.textDim }}>{h.date===new Date().toDateString()?"Bugün":h.date}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ ...orb, fontSize:9, color:T.textMuted }}>{h.at}</div>
+                    <div style={{ ...orb, fontSize:8, color:h.min>=45?"#00ff88":h.min>=25?"#00e5ff":"#a78bfa" }}>{h.min>=45?"DERİN":h.min>=25?"ORTA":"KISA"}</div>
+                    {h.pts&&<div style={{ ...orb, fontSize:8, color:"#ffd700" }}>+{h.pts}⚡</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   QUESTS SCREEN
+   ═══════════════════════════════════════════════════════════════ */
+function QuestsScreen() {
+  const { T, addPoints, addXP, todayKey, sessions, streak, xp, level } = useApp();
+  const [history]       = useLS("fb_history", []);
+  const [habits]        = useLS("fb_habits_v3", []);
+  const [checked]       = useLS("fb_checked_" + todayKey, []);
+  const [claimedQuests, setClaimedQuests] = useLS("fb_claimed_quests", {});
+  const [playedGames]   = useLS("fb_playedGames3", {});
+  const [activityStats] = useLS("fb_activity_stats", {});
+  const [tab, setTab]   = useState("daily");
+
+  const todaySessions  = history.filter(h => h.date === todayKey).length;
+  const todayMins      = history.filter(h => h.date === todayKey).reduce((s,h) => s+(h.min||0), 0);
+  const todayHabits    = checked.length;
+  const totalMins      = history.reduce((s,h) => s+(h.min||0), 0);
+  const gamesPlayed    = Object.keys(playedGames).filter(k => k.includes(todayKey)).length;
+  const uniqueActCount = Object.keys(activityStats).length;
+  const deepSessions   = history.filter(h => (h.min||0) >= 45).length;
+  const diffHard       = history.filter(h => h.difficulty === 3).length;
+  const weekKey        = "wk_" + new Date().getFullYear() + "_" + String(Math.ceil(new Date().getDate()/7));
+  const weekMins       = (() => { const d=new Date(); return history.filter(h=>{const hd=new Date(h.date);return (d-hd)<7*864e5;}).reduce((s,h)=>s+(h.min||0),0); })();
+
+  const DAILY = [
+    {id:"d_1s",   title:"İlk Ateşleme",      desc:"Bugün 1 odak seansı tamamla",              icon:"🚀",color:"#00e5ff",reward:15, xpR:8,  prog:Math.min(1,todaySessions),goal:1},
+    {id:"d_3s",   title:"Üçlü Kombo",         desc:"Bugün 3 seans tamamla",                    icon:"🔥",color:"#ff6b35",reward:40, xpR:22, prog:Math.min(3,todaySessions),goal:3},
+    {id:"d_90m",  title:"Saat Bucağı",        desc:"Bugün toplam 90 dakika odaklan",            icon:"⏱️",color:"#a78bfa",reward:55, xpR:30, prog:Math.min(90,todayMins),goal:90},
+    {id:"d_allh", title:"Mükemmel Gün",       desc:"Tüm alışkanlıklarını tamamla",              icon:"✅",color:"#00ff88",reward:35, xpR:20, prog:todayHabits,goal:Math.max(1,habits.length)},
+    {id:"d_game", title:"Zihin Ritüeli",      desc:"Günlük zihin oyununu oyna",                 icon:"🧠",color:"#7c3aed",reward:25, xpR:14, prog:Math.min(1,gamesPlayed),goal:1},
+    {id:"d_hard", title:"Zorluk Arayışı",     desc:"ZOR seviyede 1 seans tamamla",              icon:"⚔️",color:"#ff6b35",reward:50, xpR:28, prog:Math.min(1,diffHard),goal:1},
+    {id:"d_deep", title:"Derin Dalış",        desc:"45+ dakika 1 seans tamamla",                icon:"🔬",color:"#ffd700",reward:60, xpR:35, prog:Math.min(1,history.filter(h=>h.date===todayKey&&(h.min||0)>=45).length),goal:1},
+    {id:"d_5h",   title:"5'lik Rutin",        desc:"Bugün 5 alışkanlık tamamla",                icon:"🧘",color:"#22c55e",reward:30, xpR:16, prog:Math.min(5,todayHabits),goal:5},
+  ];
+
+  const WEEKLY = [
+    {id:weekKey+"_s5",   title:"Haftalık Motor",     desc:"Bu hafta 5 seans tamamla",           icon:"🏃",color:"#00e5ff",reward:70, xpR:40, prog:Math.min(5,sessions%7),goal:5},
+    {id:weekKey+"_300m", title:"5 Saatlik Zihin",    desc:"Bu hafta 300 dakika odaklan",         icon:"⚡",color:"#ff6b35",reward:110,xpR:65, prog:Math.min(300,weekMins),goal:300},
+    {id:weekKey+"_str7", title:"Yedi Günlük Zincir", desc:"7 gün streak oluştur",                icon:"🔗",color:"#ffd700",reward:120,xpR:70, prog:Math.min(7,streak),goal:7},
+    {id:weekKey+"_2act", title:"Çok Yönlü",          desc:"2 farklı aktivite türü çalış",        icon:"🎭",color:"#a78bfa",reward:60, xpR:35, prog:Math.min(2,uniqueActCount),goal:2},
+    {id:weekKey+"_3deep",title:"Derin Odak Ustası",  desc:"3 adet 45+ dk seans tamamla",         icon:"🏔️",color:"#00ff88",reward:100,xpR:58, prog:Math.min(3,deepSessions),goal:3},
+    {id:weekKey+"_allg", title:"Oyun Koleksiyoncusu",desc:"Bu haftaki 7 zihin oyununu oyna",     icon:"🎮",color:"#ec4899",reward:90, xpR:50, prog:Math.min(7,new Set(Object.keys(playedGames).map(k=>k.split("_")[0])).size),goal:7},
+    {id:weekKey+"_xp",   title:"XP Avcısı",          desc:"Bu seviyede 80 XP biriktir",          icon:"⭐",color:"#7c3aed",reward:80, xpR:45, prog:Math.min(80,xp%100),goal:80},
+  ];
+
+  const SPECIAL = [
+    {id:"sp_lv5",   title:"Yükseliş",          desc:"Seviye 5'e ulaş",               icon:"🌟",color:"#ffd700",reward:200, xpR:100,prog:Math.min(5,level),goal:5},
+    {id:"sp_lv10",  title:"Usta Protokolü",    desc:"Seviye 10'a ulaş",              icon:"💎",color:"#00e5ff",reward:400, xpR:200,prog:Math.min(10,level),goal:10},
+    {id:"sp_lv20",  title:"Efsane Statüsü",    desc:"Seviye 20'ye ulaş",             icon:"👑",color:"#ff6b35",reward:1000,xpR:500,prog:Math.min(20,level),goal:20},
+    {id:"sp_50s",   title:"50 Seans Efsanesi", desc:"50 odak seansı tamamla",        icon:"🏆",color:"#ffd700",reward:500, xpR:250,prog:Math.min(50,sessions),goal:50},
+    {id:"sp_100s",  title:"Yüzler Kulübü",     desc:"100 odak seansı tamamla",       icon:"💯",color:"#ff6b35",reward:1500,xpR:750,prog:Math.min(100,sessions),goal:100},
+    {id:"sp_str14", title:"İki Haftalık Dev",   desc:"14 gün streak oluştur",         icon:"🗿",color:"#e2e8f0",reward:300, xpR:150,prog:Math.min(14,streak),goal:14},
+    {id:"sp_str30", title:"Aylık Demir",        desc:"30 gün streak oluştur",         icon:"⚙️",color:"#94a3b8",reward:800, xpR:400,prog:Math.min(30,streak),goal:30},
+    {id:"sp_1000m", title:"Zaman Efendisi",     desc:"1000 dakika odaklan",           icon:"⌛",color:"#a78bfa",reward:400, xpR:200,prog:Math.min(1000,totalMins),goal:1000},
+    {id:"sp_3000m", title:"Zaman Ötesi",        desc:"3000 dakika odaklan",           icon:"🌌",color:"#7c3aed",reward:1200,xpR:600,prog:Math.min(3000,totalMins),goal:3000},
+    {id:"sp_50deep",title:"Derin Araştırmacı",  desc:"50 adet derin seans (45+ dk)",  icon:"🔭",color:"#00ff88",reward:600, xpR:300,prog:Math.min(50,deepSessions),goal:50},
+    {id:"sp_5act",  title:"Beyin Mimarı",       desc:"5 farklı aktivite türünde çalış",icon:"🧬",color:"#ec4899",reward:350,xpR:175,prog:Math.min(5,uniqueActCount),goal:5},
+  ];
+
+  const QUESTS_MAP = { daily:DAILY, weekly:WEEKLY, special:SPECIAL };
+  const quests = QUESTS_MAP[tab] || DAILY;
+  const claimedCount   = quests.filter(q => claimedQuests[q.id]).length;
+  const completedCount = quests.filter(q => q.prog >= q.goal && !claimedQuests[q.id]).length;
+  const tabColors = { daily:"#00e5ff", weekly:"#ffd700", special:"#ff6b35" };
+  const tc = tabColors[tab];
+
+  function claim(quest) {
+    if (claimedQuests[quest.id] || quest.prog < quest.goal) return;
+    setClaimedQuests(p => ({...p, [quest.id]:true}));
+    addPoints(quest.reward); addXP(quest.xpR);
+  }
+
+  return (
+    <div style={{ padding:"16px 16px 100px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+        <div>
+          <h2 style={{ ...orb, fontSize:14, color:T.textMuted, letterSpacing:3 }}>GÖREV MERKEZİ</h2>
+          <p style={{ ...orb, fontSize:9, color:T.textDim, marginTop:3 }}>
+            {claimedCount}/{quests.length} tamamlandı
+            {completedCount>0&&<span style={{ color:"#ffd700" }}> · {completedCount} TALEP BEKLİYOR!</span>}
+          </p>
+        </div>
+        {completedCount>0&&(
+          <div style={{ background:"linear-gradient(135deg,#ffd700,#ff6b35)", borderRadius:20, padding:"5px 14px", ...orb, fontSize:10, color:"#050a14", fontWeight:700 }}>
+            {completedCount} HAZIR!
+          </div>
+        )}
+      </div>
+
+      <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+        {[["daily","📅 Günlük"],["weekly","📆 Haftalık"],["special","🏆 Özel"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{ flex:1, padding:"10px 0", borderRadius:12, cursor:"pointer", background:tab===id?`linear-gradient(135deg,${tabColors[id]},${tabColors[id]}99)`:"rgba(255,255,255,0.04)", border:tab===id?"none":`1px solid ${T.border}`, color:tab===id?"#050a14":T.textMuted, ...orb, fontSize:10, letterSpacing:1, fontWeight:700 }}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{ background:`${tc}08`, border:`1px solid ${tc}25`, borderRadius:14, padding:"12px 16px", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ background:`${tc}20`, border:`1px solid ${tc}40`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <span style={{ ...orb, fontSize:13, color:tc }}>{claimedCount}</span>
+          </div>
+          <div>
+            <div style={{ ...orb, fontSize:10, color:T.text }}>Tamamlanan</div>
+            <div style={{ ...orb, fontSize:8, color:T.textDim, marginTop:2 }}>{quests.length} görevden</div>
+          </div>
+        </div>
+        <div style={{ height:32, width:1, background:T.border }}/>
+        <div style={{ textAlign:"right" }}>
+          <div style={{ ...orb, fontSize:10, color:tc }}>{quests.filter(q=>!claimedQuests[q.id]).reduce((s,q)=>s+q.reward,0)}⚡</div>
+          <div style={{ ...orb, fontSize:8, color:T.textDim, marginTop:2 }}>kalan ödül</div>
+        </div>
+      </div>
+
+      {quests.map(quest => {
+        const pct     = Math.min(100, (quest.prog/quest.goal)*100);
+        const done    = quest.prog >= quest.goal;
+        const claimed = claimedQuests[quest.id];
+        return (
+          <div key={quest.id} style={{ background:claimed?"rgba(0,255,136,0.05)":done?`${quest.color}0d`:T.surface, border:claimed?"1px solid rgba(0,255,136,0.25)":done?`1px solid ${quest.color}45`:`1px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:10, opacity:claimed?0.6:1, transition:"all 0.25s" }}>
+            <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+              <div style={{ width:46, height:46, borderRadius:14, background:`${quest.color}18`, border:`1px solid ${quest.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0, boxShadow:done&&!claimed?`0 0 14px ${quest.color}40`:"none" }}>
+                {claimed?"✓":quest.icon}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
+                  <div style={{ ...orb, fontSize:12, color:claimed?"#00ff88":done?quest.color:T.text }}>{quest.title}</div>
+                  <div style={{ display:"flex", gap:5 }}>
+                    <span style={{ ...orb, fontSize:9, color:quest.color }}>+{quest.reward}⚡</span>
+                    <span style={{ ...orb, fontSize:9, color:"#a78bfa" }}>+{quest.xpR}XP</span>
+                  </div>
+                </div>
+                <div style={{ fontSize:11, color:T.textMuted, marginBottom:10, lineHeight:1.4 }}>{quest.desc}</div>
+                <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:6, height:5, overflow:"hidden", marginBottom:6 }}>
+                  <div style={{ height:"100%", width:`${pct}%`, background:claimed?"#00ff88":`linear-gradient(90deg,${quest.color},${quest.color}88)`, borderRadius:6, transition:"width 0.6s ease", boxShadow:done&&!claimed?`0 0 10px ${quest.color}60`:"none" }}/>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ ...orb, fontSize:9, color:T.textDim }}>{quest.prog}/{quest.goal}</span>
+                  {done&&!claimed ? (
+                    <button onClick={()=>claim(quest)} style={{ background:`linear-gradient(135deg,${quest.color},${quest.color}99)`, border:"none", borderRadius:8, padding:"6px 16px", ...orb, fontSize:9, color:"#050a14", fontWeight:700, cursor:"pointer", letterSpacing:1, boxShadow:`0 0 16px ${quest.color}50` }}>TALEP ET</button>
+                  ) : claimed ? (
+                    <span style={{ ...orb, fontSize:9, color:"#00ff88" }}>✓ ALINDI</span>
+                  ) : (
+                    <span style={{ ...orb, fontSize:9, color:T.textDim }}>{Math.round(pct)}%</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
+function NavBar({ screen, setScreen, points }) {
+  const { T, t, theme } = useApp();
+  const tabs = [
+    { id:"home",      icon:"🏠", label:"Ana" },
+    { id:"focus",     icon:"⏱️", label:"Odak" },
+    { id:"habits",    icon:"✅", label:"Rutin" },
+    { id:"mind",      icon:"🧠", label:"Zihin" },
+    { id:"quests",    icon:"🎯", label:"Görev" },
+    { id:"analytics", icon:"📊", label:"Analiz" },
+    { id:"base",      icon:"🏛️", label:"Üs" },
+    { id:"settings",  icon:"⚙️", label:"Ayar" },
+  ];
+  return (
+    <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:430,
+      background:T.navBg, borderTop:`1px solid ${T.border}`,
+      display:"flex", justifyContent:"space-around", alignItems:"center",
+      padding:"8px 0 20px", zIndex:100, backdropFilter:"blur(24px)" }}>
+      {tabs.map(tab => (
+        <button key={tab.id} onClick={() => setScreen(tab.id)} style={{
+          background:"none", border:"none", cursor:"pointer",
+          display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+          color: screen === tab.id ? T.accent : T.textDim,
+          transition:"all 0.2s", transform:screen === tab.id ? "scale(1.1)" : "scale(1)",
+          padding:"0 4px",
+        }}>
+          <span style={{ fontSize:19 }}>{tab.icon}</span>
+          <span style={{ ...orb, fontSize:7, letterSpacing:1 }}>{tab.label}</span>
+          {screen === tab.id && <div style={{ width:3, height:3, borderRadius:"50%", background:T.accent, boxShadow:`0 0 8px ${T.accent}` }} />}
+        </button>
+      ))}
+      <div style={{ position:"absolute", top:-16, right:10, background:`linear-gradient(135deg,${T.accent},${T.accent}88)`, borderRadius:20, padding:"4px 12px", display:"flex", alignItems:"center", gap:5, boxShadow:`0 0 20px ${T.accent}50` }}>
+        <span style={{ fontSize:12 }}>⚡</span>
+        <span style={{ ...orb, fontSize:12, color:"#050a14", fontWeight:700 }}>{points}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ROOT
+   ═══════════════════════════════════════════════════════════════ */
+function App() {
+  const [screen, setScreen] = useState("home");
+  const [theme, setTheme] = useLS("fb_theme", "dark");
+  const [settings, setSettings] = useLS("fb_settings", { lang:"tr", sound:true, vib:true, dailyRem:true, focusRem:false });
+  const [points, setPoints] = useLS("fb_points", 0);
+  const [xp, setXp] = useLS("fb_xp", 0);
+  const [sessions] = useLS("fb_sessions", 0);
+  const [streak] = useLS("fb_streak", 0);
+  const [mood, setMood] = useLS("fb_mood", 2);
+  const todayKey = new Date().toDateString();
+  const lang = settings.lang || "tr";
+  const t = LANG[lang];
+  const T = theme === "dark" ? DARK : LIGHT;
+  // Progressive XP: level 1=100xp, 2=180, 3=280, 4=400, 5=540...
+  // cumulative: [0,100,280,560,960,1500,2180,3010,4000,5160,6500,8000]
+  const XP_THRESHOLDS = [0,100,280,560,960,1500,2180,3010,4000,5160,6500,8000,10000];
+  const level = XP_THRESHOLDS.reduce((lv, thresh, i) => xp >= thresh ? i : lv, 0);
+  const levelXP = XP_THRESHOLDS[level] || 0;
+  const nextXP  = XP_THRESHOLDS[level + 1] || XP_THRESHOLDS[XP_THRESHOLDS.length - 1];
+  const levelProgress = Math.min(1, (xp - levelXP) / Math.max(1, nextXP - levelXP));
+  const addPoints = useCallback((n) => setPoints(p => p + n), [setPoints]);
+  const addXP = useCallback((n) => setXp(p => p + n), [setXp]);
+
+  // Shared placed state — BaseScreen reads/writes, all screens read effects
+  const [placedGlobal, setPlacedGlobal] = useLS("fb_placed_v3", [{ id:"hq_0", structId:"hq", col:2, row:3 }]);
+  const baseEffects = calcBaseEffects(placedGlobal);
+
+  const ctx = { T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP, level, levelProgress, levelXP, nextXP, XP_THRESHOLDS, sessions, streak, mood, setMood, todayKey, placedGlobal, setPlacedGlobal, baseEffects };
+
+  return (
+    <AppCtx.Provider value={ctx}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+        body { background:${T.bg}; color:${T.text}; font-family:'JetBrains Mono',monospace; min-height:100dvh; transition:background 0.3s,color 0.3s; }
+        input, button { font-family:'JetBrains Mono',monospace; }
+        @keyframes slideUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+        ::-webkit-scrollbar { width:0; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
+      `}</style>
+
+      {/* Ambient background */}
+      <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none",
+        background: theme === "dark"
+          ? "radial-gradient(ellipse at 15% 15%,rgba(0,112,255,0.07),transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(0,229,255,0.04),transparent 55%)"
+          : "radial-gradient(ellipse at 20% 20%,rgba(0,100,220,0.05),transparent 55%)"
+      }} />
+      {theme === "dark" && (
+        <div style={{ position:"fixed", inset:0, zIndex:0, overflow:"hidden", pointerEvents:"none" }}>
+          {Array.from({length:50}).map((_, i) => (
+            <div key={i} style={{ position:"absolute", width:Math.random()*2+0.5, height:Math.random()*2+0.5, borderRadius:"50%", background:"white", opacity:Math.random()*0.28+0.05, left:`${Math.random()*100}%`, top:`${Math.random()*100}%` }} />
+          ))}
+        </div>
+      )}
+
+      <div style={{ position:"relative", zIndex:1, maxWidth:430, margin:"0 auto", minHeight:"100dvh", overflowY:"auto" }}>
+        {/* Status bar */}
+        <div style={{ padding:"14px 18px 8px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${T.border}` }}>
+          <span style={{ ...orb, fontSize:10, color:T.textDim, letterSpacing:3 }}>FOCUS BASE</span>
+          <span style={{ ...orb, fontSize:10, color:T.textDim, letterSpacing:1 }}>
+            {new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour:"2-digit", minute:"2-digit" })}
+          </span>
+        </div>
+
+        {screen === "home"      && <HomeScreen setScreen={setScreen} />}
+        {screen === "base"      && <BaseScreen />}
+        {screen === "focus"     && <FocusScreen />}
+        {screen === "habits"    && <HabitsScreen />}
+        {screen === "mind"      && <MindScreen />}
+        {screen === "analytics" && <AnalyticsScreen />}
+        {screen === "quests"    && <QuestsScreen />}
+        {screen === "settings"  && <SettingsScreen />}
+
+        <NavBar screen={screen} setScreen={setScreen} points={points} />
+      </div>
+    </AppCtx.Provider>
+  );
+}
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
