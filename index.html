@@ -316,11 +316,11 @@ function btn(color, extra = {}) {
     ...extra,
   };
 }
-// --- SES MOTORU ---
+// --- SES MOTORU (Güncel - En Kısa Sesler) ---
 const SOUNDS = {
-  bell: "https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg", // Odak bitişi: 3 saniyelik tok ve net bir zil
+  bell: "https://actions.google.com/sounds/v1/alarms/beep_short.ogg", // Odak Bitişi: Yarım saniyelik net bip
   chime: "https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg",
-  ping: "https://actions.google.com/sounds/v1/alarms/xylophone_bloop.ogg", // Mola bitişi: 2 saniyelik tatlı bir ksilofon sesi
+  ping: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_short.ogg", // Mola Bitişi: Kısa dijital saat sesi
   none: ""
 };
 
@@ -328,7 +328,7 @@ function playAudio(type, vol = 100) {
   if (!type || type === "none") return;
   try {
     const audio = new Audio(SOUNDS[type] || SOUNDS.bell);
-    audio.volume = Math.max(0, Math.min(1, vol / 100)); // Varsayılan ses %100 yapıldı
+    audio.volume = Math.max(0, Math.min(1, vol / 100));
     audio.play().catch(e => console.log("Ses çalınamadı:", e));
   } catch (err) {}
 }
@@ -870,18 +870,27 @@ function FocusScreen() {
   const todaySessions = history.filter(h => h.date === new Date().toDateString());
   const todayMins     = todaySessions.reduce((s, h) => s + (h.min || 0), 0);
 
-  // ── Timer ────────────────────────────────────────────────────
+  // ── Timer (Geliştirilmiş & Ses Sorunu Çözülmüş) ────────────────
   useEffect(() => {
     if (phase !== "work" && phase !== "break") return;
     iRef.current = setInterval(() => {
       setSecs(s => {
         if (s > 1) return s - 1;
+        
+        // SÜRE BİTTİĞİ ANDA ÇALIŞACAKLAR:
         clearInterval(iRef.current);
+        
         if (phase === "work") {
+          // Ses çalma işlemini en başa aldık ki gecikmesin
+          if (settings?.sound !== false && settings?.doneSound !== false) {
+            playAudio(settings?.soundType || "bell", settings?.volume || 100);
+          }
+
           const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
-          const diffMult  = difficulty === 3 ? 1.5 : difficulty === 2 ? 1.2 : 1.0;
-          const pts       = Math.floor((basePts + (bfx.focusBonus || 0)) * diffMult);
-          const xpEarned  = Math.floor((pts / 2) * (1 + (bfx.xpMultiplier || 0))) + (bfx.xpFlat || 0);
+          const diffMult   = difficulty === 3 ? 1.5 : difficulty === 2 ? 1.2 : 1.0;
+          const pts        = Math.floor((basePts + (bfx.focusBonus || 0)) * diffMult);
+          const xpEarned   = Math.floor((pts / 2) * (1 + (bfx.xpMultiplier || 0))) + (bfx.xpFlat || 0);
+          
           addPoints(pts); addXP(xpEarned);
           setSessions(n => n + 1);
           setTotalFocus(tf => tf + activeWork);
@@ -889,22 +898,21 @@ function FocusScreen() {
           const now = new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour:"2-digit", minute:"2-digit" });
           setHistory(h => [{ min:activeWork, at:now, date:new Date().toDateString(), activity:activeActivity, topic:activeTopic, difficulty, pts, xp:xpEarned }, ...h.slice(0, 49)]);
           setActivityStats(prev => { const c = prev[activeActivity] || { mins:0, count:0 }; return { ...prev, [activeActivity]:{ mins:c.mins+activeWork, count:c.count+1 } }; });
+          
           setPhase("done");
-            if (settings?.sound !== false && settings?.doneSound !== false) {
-  playAudio(settings?.soundType || "bell", settings?.volume || 80);
-}
-                
         } else {
-          setPhase("idle"); setSecs(activeWork * 60);
-            if (settings?.sound !== false) {
-  playAudio("ping", settings?.volume || 80);
-}
+          // Mola bittiğinde ses çal
+          if (settings?.sound !== false) {
+            playAudio("ping", settings?.volume || 100);
+          }
+          setPhase("idle"); 
+          setSecs(workMin * 60);
         }
         return 0;
       });
     }, 1000);
     return () => clearInterval(iRef.current);
-  }, [phase, activeWork, activeBreak, settings]);
+  }, [phase, activeWork, activeBreak, settings, workMin]); // <-- workMin eklendi
 
   // ── Breathing ─────────────────────────────────────────────────
   useEffect(() => {
