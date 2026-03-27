@@ -316,21 +316,28 @@ function btn(color, extra = {}) {
     ...extra,
   };
 }
-// --- SES MOTORU (Güncel - En Kısa Sesler) ---
+// --- SES MOTORU (Gelişmiş - Çift Bip Destekli) ---
 const SOUNDS = {
-  bell: "https://actions.google.com/sounds/v1/alarms/beep_short.ogg", // Odak Bitişi: Yarım saniyelik net bip
+  bell: "https://actions.google.com/sounds/v1/alarms/beep_short.ogg", 
   chime: "https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg",
-  ping: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_short.ogg", // Mola Bitişi: Kısa dijital saat sesi
+  ping: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_short.ogg",
   none: ""
 };
 
-function playAudio(type, vol = 100) {
+function playAudio(type, vol = 100, repeat = 1) {
   if (!type || type === "none") return;
-  try {
-    const audio = new Audio(SOUNDS[type] || SOUNDS.bell);
-    audio.volume = Math.max(0, Math.min(1, vol / 100));
-    audio.play().catch(e => console.log("Ses çalınamadı:", e));
-  } catch (err) {}
+  const trigger = () => {
+    try {
+      const audio = new Audio(SOUNDS[type] || SOUNDS.bell);
+      audio.volume = Math.max(0, Math.min(1, vol / 100));
+      audio.play().catch(e => console.log("Ses çalınamadı:", e));
+    } catch (err) {}
+  };
+
+  trigger(); // İlk bip
+  if (repeat > 1) {
+    setTimeout(trigger, 500); // 0.5 saniye sonra ikinci bip
+  }
 }
      
 // ─── GAME RESULT SCREEN (top-level component) ─────────────────────────────────
@@ -870,20 +877,19 @@ function FocusScreen() {
   const todaySessions = history.filter(h => h.date === new Date().toDateString());
   const todayMins     = todaySessions.reduce((s, h) => s + (h.min || 0), 0);
 
-  // ── Timer (Geliştirilmiş & Ses Sorunu Çözülmüş) ────────────────
+  // ── Timer (Mola Sesi ve Çift Bip Güncellemesi) ────────────────
   useEffect(() => {
     if (phase !== "work" && phase !== "break") return;
     iRef.current = setInterval(() => {
       setSecs(s => {
         if (s > 1) return s - 1;
         
-        // SÜRE BİTTİĞİ ANDA ÇALIŞACAKLAR:
         clearInterval(iRef.current);
         
         if (phase === "work") {
-          // Ses çalma işlemini en başa aldık ki gecikmesin
+          // Odak bittiğinde 2 defa "bip bip" çal (repeat=2)
           if (settings?.sound !== false && settings?.doneSound !== false) {
-            playAudio(settings?.soundType || "bell", settings?.volume || 100);
+            playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
           }
 
           const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
@@ -901,18 +907,21 @@ function FocusScreen() {
           
           setPhase("done");
         } else {
-          // Mola bittiğinde ses çal
+          // Mola bittiğinde 2 defa çal
           if (settings?.sound !== false) {
-            playAudio("ping", settings?.volume || 100);
+            playAudio("ping", settings?.volume || 100, 2);
           }
-          setPhase("idle"); 
-          setSecs(workMin * 60);
+          // Ekranı "idle" yapmadan önce çok kısa bir bekleme (sesin başlaması için)
+          setTimeout(() => {
+            setPhase("idle"); 
+            setSecs(workMin * 60);
+          }, 100);
         }
         return 0;
       });
     }, 1000);
     return () => clearInterval(iRef.current);
-  }, [phase, activeWork, activeBreak, settings, workMin]); // <-- workMin eklendi
+  }, [phase, activeWork, activeBreak, settings, workMin]);
 
   // ── Breathing ─────────────────────────────────────────────────
   useEffect(() => {
