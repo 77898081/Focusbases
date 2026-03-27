@@ -318,17 +318,17 @@ function btn(color, extra = {}) {
 }
 // --- SES MOTORU ---
 const SOUNDS = {
-  bell: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-  chime: "https://actions.google.com/sounds/v1/alarms/spaceship_alarm.ogg",
-  ping: "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
+  bell: "https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg", // Odak bitişi: 3 saniyelik tok ve net bir zil
+  chime: "https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg",
+  ping: "https://actions.google.com/sounds/v1/alarms/xylophone_bloop.ogg", // Mola bitişi: 2 saniyelik tatlı bir ksilofon sesi
   none: ""
 };
 
-function playAudio(type, vol = 80) {
+function playAudio(type, vol = 100) {
   if (!type || type === "none") return;
   try {
     const audio = new Audio(SOUNDS[type] || SOUNDS.bell);
-    audio.volume = Math.max(0, Math.min(1, vol / 100)); // Ses seviyesini ayarlar
+    audio.volume = Math.max(0, Math.min(1, vol / 100)); // Varsayılan ses %100 yapıldı
     audio.play().catch(e => console.log("Ses çalınamadı:", e));
   } catch (err) {}
 }
