@@ -2965,8 +2965,9 @@ function NavBar({ screen, setScreen, points }) {
 /* ═══════════════════════════════════════════════════════════════
    ROOT
    ═══════════════════════════════════════════════════════════════ */
+const XP_THRESHOLDS = [0, 100, 250, 500, 1000, 2000, 4000, 8000, 15000, 30000, 50000, 100000];
+
 function App() {
-  // 1. Önce tüm State'ler ve useLS'ler (Sıralama Bozulmamalı)
   const [screen, setScreen] = useState("home");
   const [theme, setTheme] = useLS("fb_theme", "dark");
   const [settings, setSettings] = useLS("fb_settings", { lang:"tr", sound:true, vib:true, dailyRem:true, focusRem:false });
@@ -2981,7 +2982,6 @@ function App() {
   const baseTheme = theme === "dark" ? DARK : LIGHT;
   const T = settings.accentColor ? { ...baseTheme, accent: settings.accentColor } : baseTheme;
 
-  // 2. useEffect'ler (Tüm değişkenlerden SONRA gelmeli)
   useEffect(() => {
     if (window.Notification && Notification.permission === "default") {
       Notification.requestPermission();
@@ -2993,9 +2993,14 @@ function App() {
 
   const [placedGlobal, setPlacedGlobal] = useLS("fb_placed_v3", [{ id:"hq_0", structId:"hq", col:2, row:3 }]);
   const baseEffects = calcBaseEffects(placedGlobal);
-  const ctx = { T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP, level: XP_THRESHOLDS.reduce((lv, thresh, i) => xp >= thresh ? i : lv, 0), levelXP: 0, nextXP: 0, XP_THRESHOLDS, placedGlobal, setPlacedGlobal, baseEffects };
+  
+  const level = XP_THRESHOLDS.reduce((lv, thresh, i) => xp >= thresh ? i : lv, 0);
+  const nextXP = XP_THRESHOLDS[level + 1] || XP_THRESHOLDS[level];
+  const levelProgress = nextXP > XP_THRESHOLDS[level] ? (xp - XP_THRESHOLDS[level]) / (nextXP - XP_THRESHOLDS[level]) : 1;
 
-    return (
+  const ctx = { T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP, level, levelXP: xp - XP_THRESHOLDS[level], nextXP, levelProgress, XP_THRESHOLDS, placedGlobal, setPlacedGlobal, baseEffects };
+
+  return (
     <AppCtx.Provider value={ctx}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
@@ -3012,7 +3017,6 @@ function App() {
         ${settings.reduceMotion ? '* { animation: none !important; transition: none !important; scroll-behavior: auto !important; }' : ''}
       `}</style>
 
-      {/* Ambient background */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: theme === "dark" ? "radial-gradient(ellipse at 15% 15%,rgba(0,112,255,0.07),transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(0,229,255,0.04),transparent 55%)" : "radial-gradient(ellipse at 20% 20%,rgba(0,100,220,0.05),transparent 55%)" }} />
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 430, margin: "0 auto", minHeight: "100dvh", overflowY: "auto" }}>
@@ -3023,7 +3027,6 @@ function App() {
           </span>
         </div>
 
-        {/* Ölümsüz Ekranlar (Persistent Rendering) */}
         <div style={{ display: screen === "home" ? "block" : "none" }}><HomeScreen setScreen={setScreen} /></div>
         <div style={{ display: screen === "base" ? "block" : "none" }}><BaseScreen /></div>
         <div style={{ display: screen === "focus" ? "block" : "none" }}><FocusScreen /></div>
@@ -3037,7 +3040,14 @@ function App() {
       </div>
     </AppCtx.Provider>
   );
-    // --- FIREBASE BİLDİRİM SİSTEMİ ---
+} 
+/* ↑ İŞTE BU EKSİK OLAN SÜSLÜ PARANTEZ UYGULAMAYI KURTARDI! ↑ */
+
+// --- UYGULAMAYI BAŞLATMA (MOTORU ÇALIŞTIRMA) ---
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+// --- FIREBASE BİLDİRİM SİSTEMİ ---
 if (!firebase.apps.length) {
   firebase.initializeApp({
     apiKey: "AIzaSyDEIIFHQc3zm_7ocGGWZZd4FO_hScblYyY",
@@ -3055,11 +3065,9 @@ function askForNotificationPermission() {
   Notification.requestPermission().then((permission) => {
     if (permission === 'granted') {
       console.log('Bildirim izni verildi.');
-      // DİKKAT: Buraya tırnakların içine Firebase'den aldığın o uzun sertifika anahtarını yapıştır
       messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' })
         .then((token) => {
           if (token) {
-            // Artık her şey arka planda sessizce halloluyor
             console.log("Cihaz Tokenı başarıyla alındı.");
           }
         })
