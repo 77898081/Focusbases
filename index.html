@@ -826,8 +826,8 @@ function FocusScreen() {
   const { T, t, lang, addPoints, addXP, baseEffects, settings } = useApp();
   const bfx = baseEffects || {};
 
-  const [workMin, setWorkMin]     = useLS("fb_workMin", 25);
-  const [breakMin, setBreakMin]   = useLS("fb_breakMin", 5);
+  const [workMin, setWorkMin] = useState(settings.defaultWork || 25);
+  const [breakMin, setBreakMin] = useState(settings.defaultBreak || 5);
   const [sessions, setSessions]   = useLS("fb_sessions", 0);
   const [totalFocus, setTotalFocus] = useLS("fb_totalFocus", 0);
   const [history, setHistory]     = useLS("fb_history", []);
