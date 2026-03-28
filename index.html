@@ -2052,7 +2052,7 @@ function SettingsScreen() {
           </div>
           <div style={{ display:"flex", gap:6 }}>
             {[["bell","🔔 Zil"],["chime","🎵 Melodi"],["ping","⚡ Ping"],["none","🔇 Yok"]].map(([v,lbl])=>(
-              <button key={v} onClick={()=>set("soundType",v)} style={{ flex:1, padding:"8px 4px", borderRadius:8, cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:9, background:(settings.soundType||"bell")===v?`${T.accent}20`:"rgba(255,255,255,0.03)", border:(settings.soundType||"bell")===v?`1px solid ${T.accent}`:`1px solid ${T.border}`, color:(settings.soundType||"bell")===v?T.accent:T.textMuted }}>{lbl}</button>
+              <button key={v} ​onClick={() => { set("soundType", v); playAudio(v, settings.volume || 100); }} style={{ flex:1, padding:"8px 4px", borderRadius:8, cursor:"pointer", fontFamily:"'Orbitron',sans-serif", fontSize:9, background:(settings.soundType||"bell")===v?`${T.accent}20`:"rgba(255,255,255,0.03)", border:(settings.soundType||"bell")===v?`1px solid ${T.accent}`:`1px solid ${T.border}`, color:(settings.soundType||"bell")===v?T.accent:T.textMuted }}>{lbl}</button>
             ))}
           </div>
         </div>
