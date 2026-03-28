@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+zz<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -2966,80 +2966,43 @@ function NavBar({ screen, setScreen, points }) {
    ROOT
    ═══════════════════════════════════════════════════════════════ */
 function App() {
+  // 1. Önce tüm State'ler ve useLS'ler (Sıralama Bozulmamalı)
   const [screen, setScreen] = useState("home");
-    useEffect(() => {
-    if (window.Notification && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
   const [theme, setTheme] = useLS("fb_theme", "dark");
   const [settings, setSettings] = useLS("fb_settings", { lang:"tr", sound:true, vib:true, dailyRem:true, focusRem:false });
   const [points, setPoints] = useLS("fb_points", 0);
   const [xp, setXp] = useLS("fb_xp", 0);
-  const [sessions] = useLS("fb_sessions", 0);
-  const [streak] = useLS("fb_streak", 0);
+  const [sessions, setSessions] = useLS("fb_sessions", 0);
+  const [streak, setStreak] = useLS("fb_streak", 0);
   const [mood, setMood] = useLS("fb_mood", 2);
   const todayKey = new Date().toDateString();
   const lang = settings.lang || "tr";
   const t = LANG[lang];
   const baseTheme = theme === "dark" ? DARK : LIGHT;
-  const T = settings.accentColor 
-    ? { ...baseTheme, accent: settings.accentColor }
-    : baseTheme;
-  // Progressive XP: level 1=100xp, 2=180, 3=280, 4=400, 5=540...
-  // cumulative: [0,100,280,560,960,1500,2180,3010,4000,5160,6500,8000]
-  const XP_THRESHOLDS = [0,100,280,560,960,1500,2180,3010,4000,5160,6500,8000,10000];
-  const level = XP_THRESHOLDS.reduce((lv, thresh, i) => xp >= thresh ? i : lv, 0);
-  const levelXP = XP_THRESHOLDS[level] || 0;
-  const nextXP  = XP_THRESHOLDS[level + 1] || XP_THRESHOLDS[XP_THRESHOLDS.length - 1];
-  const levelProgress = Math.min(1, (xp - levelXP) / Math.max(1, nextXP - levelXP));
+  const T = settings.accentColor ? { ...baseTheme, accent: settings.accentColor } : baseTheme;
+
+  // 2. useEffect'ler (Tüm değişkenlerden SONRA gelmeli)
+  useEffect(() => {
+    if (window.Notification && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
   const addPoints = useCallback((n) => setPoints(p => p + n), [setPoints]);
   const addXP = useCallback((n) => setXp(p => p + n), [setXp]);
 
-  // Shared placed state — BaseScreen reads/writes, all screens read effects
   const [placedGlobal, setPlacedGlobal] = useLS("fb_placed_v3", [{ id:"hq_0", structId:"hq", col:2, row:3 }]);
   const baseEffects = calcBaseEffects(placedGlobal);
-
-  const ctx = { T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP, level, levelProgress, levelXP, nextXP, XP_THRESHOLDS, sessions, streak, mood, setMood, todayKey, placedGlobal, setPlacedGlobal, baseEffects };
+  const ctx = { T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP, level: XP_THRESHOLDS.reduce((lv, thresh, i) => xp >= thresh ? i : lv, 0), levelXP: 0, nextXP: 0, XP_THRESHOLDS, placedGlobal, setPlacedGlobal, baseEffects };
 
   return (
     <AppCtx.Provider value={ctx}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
-        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-                  html, body {
-          background: ${T.bg};
-          color: ${T.text};
-          transition: background 0.3s, color 0.3s;
-          zoom: ${(settings.fontSize || 100) / 100};
-          filter: ${settings.highContrast ? 'contrast(1.4)' : 'none'};
-        }
-        ${settings.reduceMotion ? '* { animation: none !important; transition: none !important; scroll-behavior: auto !important; }' : ''}
-body { background:${T.bg}; color:${T.text}; font-family:'JetBrains Mono',monospace; min-height:100dvh; transition:background 0.3s,color 0.3s; }
-        input, button { font-family:'JetBrains Mono',monospace; }
-        @keyframes slideUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes slideDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
-        ::-webkit-scrollbar { width:0; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
-${settings.animations === false ? "* { animation: none !important; transition: none !important; }" : ""}
-`}</style>
-      {/* Ambient background */}
-      <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none",
-        background: theme === "dark"
-          ? "radial-gradient(ellipse at 15% 15%,rgba(0,112,255,0.07),transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(0,229,255,0.04),transparent 55%)"
-          : "radial-gradient(ellipse at 20% 20%,rgba(0,100,220,0.05),transparent 55%)"
-      }} />
-      {theme === "dark" && settings.starsBg !== false && (
-        <div style={{ position:"fixed", inset:0, zIndex:0, overflow:"hidden", pointerEvents:"none" }}>
-          {Array.from({length:50}).map((_, i) => (
-            <div key={i} style={{ position:"absolute", width:Math.random()*2+0.5, height:Math.random()*2+0.5, borderRadius:"50%", background:"white", opacity:Math.random()*0.28+0.05, left:`${Math.random()*100}%`, top:`${Math.random()*100}%` }} />
-          ))}
-        </div>
-      )}
+        /* ... senin global CSS kodların buraya gelecek ... */
+      `}</style>
 
+      {/* Ana Ekran Konteynırı */}
       <div style={{ position:"relative", zIndex:1, maxWidth:430, margin:"0 auto", minHeight:"100dvh", overflowY:"auto" }}>
-        {/* Status bar */}
         <div style={{ padding:"14px 18px 8px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${T.border}` }}>
           <span style={{ ...orb, fontSize:10, color:T.textDim, letterSpacing:3 }}>FOCUS BASE</span>
           <span style={{ ...orb, fontSize:10, color:T.textDim, letterSpacing:1 }}>
@@ -3047,6 +3010,7 @@ ${settings.animations === false ? "* { animation: none !important; transition: n
           </span>
         </div>
 
+        {/* Ölümsüz Ekranlar (Persistent Rendering) */}
         <div style={{ display: screen === "home" ? "block" : "none" }}><HomeScreen setScreen={setScreen} /></div>
         <div style={{ display: screen === "base" ? "block" : "none" }}><BaseScreen /></div>
         <div style={{ display: screen === "focus" ? "block" : "none" }}><FocusScreen /></div>
@@ -3062,7 +3026,6 @@ ${settings.animations === false ? "* { animation: none !important; transition: n
   );
 }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
     // --- FIREBASE BİLDİRİM SİSTEMİ ---
 if (!firebase.apps.length) {
