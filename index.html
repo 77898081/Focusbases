@@ -2977,7 +2977,7 @@ function NavBar({ screen, setScreen, points }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ROOT
+   ROOT (Çökmeye Karşı Korumalı Sürüm)
    ═══════════════════════════════════════════════════════════════ */
 const XP_THRESHOLDS = [0, 100, 250, 500, 1000, 2000, 4000, 8000, 15000, 30000, 50000, 100000];
 
@@ -2996,9 +2996,15 @@ function App() {
   const baseTheme = theme === "dark" ? DARK : LIGHT;
   const T = settings.accentColor ? { ...baseTheme, accent: settings.accentColor } : baseTheme;
 
+  // 🛡️ Tablet çökmelerine karşı KORUMALI bildirim izni (Hata Satır 0'ın asıl sebebi buydu!)
   useEffect(() => {
-    if (window.Notification && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
+    try {
+      if (typeof window !== "undefined" && window.Notification && Notification.permission === "default") {
+        const req = Notification.requestPermission();
+        if (req && typeof req.catch === "function") req.catch(() => console.log("Bildirim reddedildi"));
+      }
+    } catch (error) { 
+      console.log("Cihaz bildirim iznini desteklemiyor, çökme engellendi."); 
     }
   }, []);
 
@@ -3045,6 +3051,7 @@ function App() {
           </span>
         </div>
 
+        {/* 🧠 Ölümsüz Ekranlar Burada! */}
         <div style={{ display: screen === "home" ? "block" : "none" }}><HomeScreen setScreen={setScreen} /></div>
         <div style={{ display: screen === "base" ? "block" : "none" }}><BaseScreen /></div>
         <div style={{ display: screen === "focus" ? "block" : "none" }}><FocusScreen /></div>
@@ -3062,35 +3069,6 @@ function App() {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
-
-try {
-  if (!firebase.apps.length) {
-    firebase.initializeApp({
-      apiKey: "AIzaSyDEIIFHQc3zm_7ocGGWZZd4FO_hScblYyY",
-      authDomain: "focusbases-e967a.firebaseapp.com",
-      projectId: "focusbases-e967a",
-      storageBucket: "focusbases-e967a.firebasestorage.app",
-      messagingSenderId: "541869127832",
-      appId: "1:541869127832:web:161ad4bc95287d1ceff8cd"
-    });
-  }
-  if (firebase.messaging && typeof firebase.messaging.isSupported === 'function') {
-    firebase.messaging.isSupported().then((supported) => {
-      if (supported) {
-        const messaging = firebase.messaging();
-        window.addEventListener('load', () => {
-          if (window.Notification && Notification.permission !== 'granted') {
-            Notification.requestPermission().then((permission) => {
-              if (permission === 'granted') {
-                messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' }).catch(()=>{});
-              }
-            });
-          }
-        });
-      }
-    }).catch(()=>{});
-  }
-} catch (e) { console.log("Firebase arka plan hatası korumaya alındı."); }
   </script>
 </body>
 </html>
