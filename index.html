@@ -1045,12 +1045,12 @@ function FocusScreen() {
                     </button>
                   ))}
                 </div>
-                {/* Duration inputs — always visible, compact */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
-                            {[["⏱ Odak (dk)", customWork, setCustomWork, setWorkMin], ["☕ Mola (dk)", customBreak, setCustomBreak, setBreakMin]].map(([label, val, setter, persist]) => (
+                   {/* Duration inputs - always visible, compact */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+          {[["⏱ Odak (dk)", customWork, setCustomWork, setWorkMin], ["☕ Mola (dk)", customBreak, setCustomBreak, setBreakMin]].map(([label, val, setter, persist]) => (
             <div key={label}>
               <div style={{ ...orb, fontSize: 9, color: T.textDim, marginBottom: 5 }}>{label}</div>
-                            <input type="number" value={val} 
+              <input type="number" value={val} 
                 onChange={e => { 
                   const v = e.target.value; setter(v); setSelPreset("custom"); 
                   if (label === "⏱ Odak (dk)") { 
@@ -1063,8 +1063,9 @@ function FocusScreen() {
                 onBlur={e => { const n = Math.max(1, parseInt(e.target.value) || 25); setter(String(n)); persist(n); }}
                 style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 10, padding: "9px", color: T.text, fontSize: 22 }}
               />
+            </div>
           ))}
-                </div>
+        </div>
                 {/* Difficulty */}
                 <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:10 }}>ZORLUK SEVİYESİ</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -1079,8 +1080,9 @@ function FocusScreen() {
                       perks:["Uzun ve derin seanslar (45-90dk)","Minimum mola süreleri","Puan: ⚡ x1.5 bonus","Özel görev: Haftalık Derin Odak Ustası","Streak bonusu x2 kazanırsın"],
                       bonus:"+%50 puan", xpMult:"x1.5" },
                           ].map(({ d, label, color, icon, perks, bonus, xpMult }) => {
-                    const sel = difficulty===d;
-                               <button 
+          const sel = difficulty === d;
+          return (
+            <button 
               key={d} 
               onClick={() => { 
                 setDifficulty(d); 
@@ -1088,7 +1090,7 @@ function FocusScreen() {
                 else if (d === 2) { setCustomWork("40"); setWorkMin(40); setCustomBreak("10"); setBreakMin(10); } 
                 else if (d === 3) { setCustomWork("60"); setWorkMin(60); setCustomBreak("15"); setBreakMin(15); } 
               }} 
-              style={{  
+              style={{
                         padding:"12px 14px", borderRadius:14, cursor:"pointer", textAlign:"left",
                         background: sel?`${color}15`:"rgba(255,255,255,0.03)",
                         border: sel?`1px solid ${color}`:`1px solid ${T.border}`,
