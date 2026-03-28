@@ -2984,7 +2984,7 @@ function App() {
 
   useEffect(() => {
     if (window.Notification && Notification.permission === "default") {
-      Notification.requestPermission();
+      Notification.requestPermission().catch(() => console.log("Bildirim izni reddedildi"));
     }
   }, []);
 
@@ -2998,7 +2998,14 @@ function App() {
   const nextXP = XP_THRESHOLDS[level + 1] || XP_THRESHOLDS[level];
   const levelProgress = nextXP > XP_THRESHOLDS[level] ? (xp - XP_THRESHOLDS[level]) / (nextXP - XP_THRESHOLDS[level]) : 1;
 
-  const ctx = { T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP, level, levelXP: xp - XP_THRESHOLDS[level], nextXP, levelProgress, XP_THRESHOLDS, placedGlobal, setPlacedGlobal, baseEffects };
+  // EKSİK OLAN TÜM DEĞİŞKENLERİ CTX İÇİNE EKLEDİM (Sayfa bozulmasını önler)
+  const ctx = { 
+    T, t, lang, theme, setTheme, settings, setSettings, 
+    points, setPoints, addPoints, xp, setXp, addXP, 
+    level, levelXP: xp - XP_THRESHOLDS[level], nextXP, levelProgress, XP_THRESHOLDS, 
+    placedGlobal, setPlacedGlobal, baseEffects,
+    sessions, setSessions, streak, setStreak, mood, setMood, todayKey 
+  };
 
   return (
     <AppCtx.Provider value={ctx}>
@@ -3040,45 +3047,49 @@ function App() {
       </div>
     </AppCtx.Provider>
   );
-} 
-/* ↑ İŞTE BU EKSİK OLAN SÜSLÜ PARANTEZ UYGULAMAYI KURTARDI! ↑ */
+}
 
-// --- UYGULAMAYI BAŞLATMA (MOTORU ÇALIŞTIRMA) ---
+// --- UYGULAMAYI BAŞLATMA ---
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
-// --- FIREBASE BİLDİRİM SİSTEMİ ---
-if (!firebase.apps.length) {
-  firebase.initializeApp({
-    apiKey: "AIzaSyDEIIFHQc3zm_7ocGGWZZd4FO_hScblYyY",
-    authDomain: "focusbases-e967a.firebaseapp.com",
-    projectId: "focusbases-e967a",
-    storageBucket: "focusbases-e967a.firebasestorage.app",
-    messagingSenderId: "541869127832",
-    appId: "1:541869127832:web:161ad4bc95287d1ceff8cd"
-  });
-}
+// --- FIREBASE BİLDİRİM SİSTEMİ (TABLET/İOS İÇİN GÜVENLİ HALE GETİRİLDİ) ---
+try {
+  if (!firebase.apps.length) {
+    firebase.initializeApp({
+      apiKey: "AIzaSyDEIIFHQc3zm_7ocGGWZZd4FO_hScblYyY",
+      authDomain: "focusbases-e967a.firebaseapp.com",
+      projectId: "focusbases-e967a",
+      storageBucket: "focusbases-e967a.firebasestorage.app",
+      messagingSenderId: "541869127832",
+      appId: "1:541869127832:web:161ad4bc95287d1ceff8cd"
+    });
+  }
 
-const messaging = firebase.messaging();
-
-function askForNotificationPermission() {
-  Notification.requestPermission().then((permission) => {
-    if (permission === 'granted') {
-      console.log('Bildirim izni verildi.');
-      messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' })
-        .then((token) => {
-          if (token) {
-            console.log("Cihaz Tokenı başarıyla alındı.");
+  // Tablet/Telefon tarayıcılarında çökmeyi engellemek için güvenlik kontrolü (İşte siyah ekranı yapan buydu)
+  if (firebase.messaging && firebase.messaging.isSupported) {
+    firebase.messaging.isSupported().then((supported) => {
+      if (supported) {
+        const messaging = firebase.messaging();
+        function askForNotificationPermission() {
+          if (window.Notification && Notification.permission !== 'granted') {
+            Notification.requestPermission().then((permission) => {
+              if (permission === 'granted') {
+                messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' })
+                  .then((token) => { if (token) console.log("Bildirim aktif."); })
+                  .catch(() => {});
+              }
+            });
           }
-        })
-        .catch((err) => {
-          console.log("Token alınırken bir hata oluştu.", err);
-        });
-    }
-  });
+        }
+        window.addEventListener('load', askForNotificationPermission);
+      }
+    }).catch(() => {});
+  }
+} catch (error) {
+  console.log("Firebase bu cihazda arka plan bildirimini desteklemiyor, ancak uygulama normal çalışmaya devam edecek.");
 }
-
-window.addEventListener('load', askForNotificationPermission);
   </script>
 </body>
 </html>
+
