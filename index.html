@@ -2978,7 +2978,12 @@ function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-        body { background:${T.bg}; color:${T.text}; font-family:'JetBrains Mono',monospace; min-height:100dvh; transition:background 0.3s,color 0.3s; }
+          html, body {
+    background: ${T.bg}; /* Sayfanın ana zemini temanın rengi olsun (Gündüz=Beyaz, Gece=Siyah) */
+    color: ${T.text}; /* Ana metin rengi temanın metin rengi olsun */
+    transition: background 0.3s, color 0.3s; /* Renk değişimi yumuşak olsun (0.3 saniye sürecek) */
+  }
+body { background:${T.bg}; color:${T.text}; font-family:'JetBrains Mono',monospace; min-height:100dvh; transition:background 0.3s,color 0.3s; }
         input, button { font-family:'JetBrains Mono',monospace; }
         @keyframes slideUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
