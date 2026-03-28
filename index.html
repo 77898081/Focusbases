@@ -2967,6 +2967,11 @@ function NavBar({ screen, setScreen, points }) {
    ═══════════════════════════════════════════════════════════════ */
 function App() {
   const [screen, setScreen] = useState("home");
+    useEffect(() => {
+    if (window.Notification && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
   const [theme, setTheme] = useLS("fb_theme", "dark");
   const [settings, setSettings] = useLS("fb_settings", { lang:"tr", sound:true, vib:true, dailyRem:true, focusRem:false });
   const [points, setPoints] = useLS("fb_points", 0);
