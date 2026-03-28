@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+    <script>
+    window.onerror = function(message, source, lineno) {
+      document.body.innerHTML = '<div style="background:white; color:red; padding:30px; font-size:20px; font-family:sans-serif; z-index:99999; position:fixed; top:0; left:0; width:100%; height:100%;"><b>HATA BULUNDU:</b><br><br>' + message + '<br><br><b>Satır:</b> ' + lineno + '</div>';
+      return true;
+    };
+    const originError = console.error;
+    console.error = function(msg) {
+      if(typeof msg === 'string' || msg instanceof Error) {
+        document.body.innerHTML = '<div style="background:white; color:red; padding:30px; font-size:20px; font-family:sans-serif; z-index:99999; position:fixed; top:0; left:0; width:100%; height:100%;"><b>KONSOL HATASI:</b><br><br>' + (msg.message || msg) + '</div>';
+      }
+      originError.apply(console, arguments);
+    };
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#050a14" />
