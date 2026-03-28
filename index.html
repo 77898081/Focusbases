@@ -2984,7 +2984,7 @@ function App() {
 
   useEffect(() => {
     if (window.Notification && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => console.log("Bildirim izni reddedildi"));
+      Notification.requestPermission().catch(() => {});
     }
   }, []);
 
@@ -2993,18 +2993,15 @@ function App() {
 
   const [placedGlobal, setPlacedGlobal] = useLS("fb_placed_v3", [{ id:"hq_0", structId:"hq", col:2, row:3 }]);
   const baseEffects = calcBaseEffects(placedGlobal);
-  
+
   const level = XP_THRESHOLDS.reduce((lv, thresh, i) => xp >= thresh ? i : lv, 0);
   const nextXP = XP_THRESHOLDS[level + 1] || XP_THRESHOLDS[level];
   const levelProgress = nextXP > XP_THRESHOLDS[level] ? (xp - XP_THRESHOLDS[level]) / (nextXP - XP_THRESHOLDS[level]) : 1;
 
-  // EKSİK OLAN TÜM DEĞİŞKENLERİ CTX İÇİNE EKLEDİM (Sayfa bozulmasını önler)
-  const ctx = { 
-    T, t, lang, theme, setTheme, settings, setSettings, 
-    points, setPoints, addPoints, xp, setXp, addXP, 
-    level, levelXP: xp - XP_THRESHOLDS[level], nextXP, levelProgress, XP_THRESHOLDS, 
-    placedGlobal, setPlacedGlobal, baseEffects,
-    sessions, setSessions, streak, setStreak, mood, setMood, todayKey 
+  const ctx = {
+    T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP,
+    level, levelXP: xp - XP_THRESHOLDS[level], nextXP, levelProgress, XP_THRESHOLDS,
+    placedGlobal, setPlacedGlobal, baseEffects, sessions, setSessions, streak, setStreak, mood, setMood, todayKey
   };
 
   return (
@@ -3028,8 +3025,8 @@ function App() {
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 430, margin: "0 auto", minHeight: "100dvh", overflowY: "auto" }}>
         <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${T.border}` }}>
-          <span style={{ ...orb, fontSize: 10, color: T.textDim, letterSpacing: 3 }}>FOCUS BASE</span>
-          <span style={{ ...orb, fontSize: 10, color: T.textDim, letterSpacing: 1 }}>
+          <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: T.textDim, letterSpacing: 3 }}>FOCUS BASE</span>
+          <span style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 10, color: T.textDim, letterSpacing: 1 }}>
             {new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
@@ -3049,11 +3046,9 @@ function App() {
   );
 }
 
-// --- UYGULAMAYI BAŞLATMA ---
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
-// --- FIREBASE BİLDİRİM SİSTEMİ (TABLET/İOS İÇİN GÜVENLİ HALE GETİRİLDİ) ---
 try {
   if (!firebase.apps.length) {
     firebase.initializeApp({
@@ -3065,31 +3060,25 @@ try {
       appId: "1:541869127832:web:161ad4bc95287d1ceff8cd"
     });
   }
-
-  // Tablet/Telefon tarayıcılarında çökmeyi engellemek için güvenlik kontrolü (İşte siyah ekranı yapan buydu)
-  if (firebase.messaging && firebase.messaging.isSupported) {
+  if (firebase.messaging && typeof firebase.messaging.isSupported === 'function') {
     firebase.messaging.isSupported().then((supported) => {
       if (supported) {
         const messaging = firebase.messaging();
-        function askForNotificationPermission() {
+        window.addEventListener('load', () => {
           if (window.Notification && Notification.permission !== 'granted') {
             Notification.requestPermission().then((permission) => {
               if (permission === 'granted') {
-                messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' })
-                  .then((token) => { if (token) console.log("Bildirim aktif."); })
-                  .catch(() => {});
+                messaging.getToken({ vapidKey: 'BH_ijCAuQB3S5YWf1jqmQRzieaf6pIiYwgrlHAvslt6Nprmr9igrhUuxBeINr0q-rSr4VgBBQRKgEgS5m6HMA2A' }).catch(()=>{});
               }
             });
           }
-        }
-        window.addEventListener('load', askForNotificationPermission);
+        });
       }
-    }).catch(() => {});
+    }).catch(()=>{});
   }
-} catch (error) {
-  console.log("Firebase bu cihazda arka plan bildirimini desteklemiyor, ancak uygulama normal çalışmaya devam edecek.");
-}
+} catch (e) { console.log("Firebase arka plan hatası korumaya alındı."); }
   </script>
 </body>
 </html>
+
 
