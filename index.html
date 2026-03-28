@@ -2995,29 +2995,31 @@ function App() {
   const baseEffects = calcBaseEffects(placedGlobal);
   const ctx = { T, t, lang, theme, setTheme, settings, setSettings, points, setPoints, addPoints, xp, setXp, addXP, level: XP_THRESHOLDS.reduce((lv, thresh, i) => xp >= thresh ? i : lv, 0), levelXP: 0, nextXP: 0, XP_THRESHOLDS, placedGlobal, setPlacedGlobal, baseEffects };
 
-  return (
+    return (
     <AppCtx.Provider value={ctx}>
       <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
-          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-          html, body {
-            background: ${T.bg};
-            color: ${T.text};
-            transition: background 0.3s, color 0.3s;
-            zoom: ${(settings.fontSize || 100) / 100};
-            filter: ${settings.highContrast ? 'contrast(1.4)' : 'none'};
-          }
-          body { background: ${T.bg}; color: ${T.text}; font-family: 'JetBrains Mono', monospace; min-height: 100dvh; }
-          input, button { font-family: 'JetBrains Mono', monospace; }
-          ${settings.reduceMotion ? '* { animation: none !important; transition: none !important; scroll-behavior: auto !important; }' : ''}
-        `}</style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body {
+          background: ${T.bg};
+          color: ${T.text};
+          transition: background 0.3s, color 0.3s;
+          zoom: ${(settings.fontSize || 100) / 100};
+          filter: ${settings.highContrast ? 'contrast(1.4)' : 'none'};
+        }
+        body { background: ${T.bg}; color: ${T.text}; font-family: 'JetBrains Mono', monospace; min-height: 100dvh; }
+        input, button { font-family: 'JetBrains Mono', monospace; }
+        ${settings.reduceMotion ? '* { animation: none !important; transition: none !important; scroll-behavior: auto !important; }' : ''}
+      `}</style>
 
-        <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: theme === "dark" ? "radial-gradient(ellipse at 15% 15%,rgba(0,112,255,0.07),transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(0,229,255,0.04),transparent 55%)" : "radial-gradient(ellipse at 20% 20%,rgba(0,100,220,0.05),transparent 55%)" }} />
-      <div style={{ position:"relative", zIndex:1, maxWidth:430, margin:"0 auto", minHeight:"100dvh", overflowY:"auto" }}>
-        <div style={{ padding:"14px 18px 8px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${T.border}` }}>
-          <span style={{ ...orb, fontSize:10, color:T.textDim, letterSpacing:3 }}>FOCUS BASE</span>
-          <span style={{ ...orb, fontSize:10, color:T.textDim, letterSpacing:1 }}>
-            {new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour:"2-digit", minute:"2-digit" })}
+      {/* Ambient background */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: theme === "dark" ? "radial-gradient(ellipse at 15% 15%,rgba(0,112,255,0.07),transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(0,229,255,0.04),transparent 55%)" : "radial-gradient(ellipse at 20% 20%,rgba(0,100,220,0.05),transparent 55%)" }} />
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 430, margin: "0 auto", minHeight: "100dvh", overflowY: "auto" }}>
+        <div style={{ padding: "14px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${T.border}` }}>
+          <span style={{ ...orb, fontSize: 10, color: T.textDim, letterSpacing: 3 }}>FOCUS BASE</span>
+          <span style={{ ...orb, fontSize: 10, color: T.textDim, letterSpacing: 1 }}>
+            {new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
 
@@ -3035,9 +3037,6 @@ function App() {
       </div>
     </AppCtx.Provider>
   );
-}
-
-    root.render(<App />);
     // --- FIREBASE BİLDİRİM SİSTEMİ ---
 if (!firebase.apps.length) {
   firebase.initializeApp({
