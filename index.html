@@ -2953,7 +2953,10 @@ function App() {
   const todayKey = new Date().toDateString();
   const lang = settings.lang || "tr";
   const t = LANG[lang];
-  const T = theme === "dark" ? DARK : LIGHT;
+  const baseTheme = theme === "dark" ? DARK : LIGHT;
+  const T = settings.accentColor 
+    ? { ...baseTheme, accent: settings.accentColor }
+    : baseTheme;
   // Progressive XP: level 1=100xp, 2=180, 3=280, 4=400, 5=540...
   // cumulative: [0,100,280,560,960,1500,2180,3010,4000,5160,6500,8000]
   const XP_THRESHOLDS = [0,100,280,560,960,1500,2180,3010,4000,5160,6500,8000,10000];
