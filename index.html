@@ -1047,15 +1047,16 @@ function FocusScreen() {
                 </div>
                 {/* Duration inputs — always visible, compact */}
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
-                  {[["⏱ Odak (dk)", customWork, setCustomWork, setWorkMin], ["☕ Mola (dk)", customBreak, setCustomBreak, setBreakMin]].map(([label,val,setter,persist]) => (
-                    <div key={label}>
-                      <div style={{ ...orb, fontSize:9, color:T.textDim, marginBottom:5 }}>{label}</div>
-                      <input type="number" value={val}
-                        onChange={e => { const val = e.target.value; setter(val); setSelPreset("custom"); if (label === "⏱ Odak (dk)") { const num = parseInt(val) || 0; if (num > 0 && num <= 25) setDifficulty(1); else if (num > 25 && num <= 50) setDifficulty(2); else if (num > 50) setDifficulty(3); } }}
-                        onBlur={e=>{ const n=Math.max(1,parseInt(e.target.value)||25); setter(String(n)); persist(n); }}
-                        style={{ width:"100%", background:T.inputBg, border:`1px solid ${T.inputBorder}`, borderRadius:10, padding:"9px", color:T.text, fontSize:22, ...orb, textAlign:"center", outline:"none" }} />
-                    </div>
-                  ))}
+                            {[["⏱ Odak (dk)", customWork, setCustomWork, setWorkMin], ["☕ Mola (dk)", customBreak, setCustomBreak, setBreakMin]].map(([label, val, setter, persist]) => (
+            <div key={label}>
+              <div style={{ ...orb, fontSize: 9, color: T.textDim, marginBottom: 5 }}>{label}</div>
+              <input type="number" value={val} 
+                onChange={e => { const v = e.target.value; setter(v); setSelPreset("custom"); if (label === "⏱ Odak (dk)") { const n = parseInt(v) || 0; if (n > 0 && n <= 25) setDifficulty(1); else if (n > 25 && n <= 50) setDifficulty(2); else if (n > 50) setDifficulty(3); } }}
+                onBlur={e => { const n = Math.max(1, parseInt(e.target.value) || 25); setter(String(n)); persist(n); }}
+                style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 10, padding: "9px", color: T.text, fontSize: 22 }}
+              />
+            </div>
+          ))}
                 </div>
                 {/* Difficulty */}
                 <div style={{ ...orb, fontSize:9, color:T.textDim, letterSpacing:2, marginBottom:10 }}>ZORLUK SEVİYESİ</div>
@@ -1070,7 +1071,7 @@ function FocusScreen() {
                     { d:3, label:"Zor",    color:"#ff6b35", icon:"🔴",
                       perks:["Uzun ve derin seanslar (45-90dk)","Minimum mola süreleri","Puan: ⚡ x1.5 bonus","Özel görev: Haftalık Derin Odak Ustası","Streak bonusu x2 kazanırsın"],
                       bonus:"+%50 puan", xpMult:"x1.5" },
-                  ].map(({d,label,color,icon,perks,bonus,xpMult}) => {
+                          ].map(({ d, label, color, icon, perks, bonus, xpMult }) => {
                     const sel = difficulty===d;
                     return (
                       <button key={d} onClick={() => { setDifficulty(d); if (d === 1) { setCustomWork("20"); setWorkMin(20); setCustomBreak("5"); setBreakMin(5); } else if (d === 2) { setCustomWork("40"); setWorkMin(40); setCustomBreak("10"); setBreakMin(10); } else if (d === 3) { setCustomWork("60"); setWorkMin(60); setCustomBreak("15"); setBreakMin(15); } }} style={{  
