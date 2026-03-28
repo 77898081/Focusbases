@@ -888,10 +888,14 @@ function FocusScreen() {
         
         clearInterval(iRef.current);
         
-        if (phase === "work") {
-          // Odak bittiğinde 2 defa "bip bip" çal (repeat=2)
-          if (settings?.sound !== false && settings?.doneSound !== false) {
-            playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
+                  if (phase === "work") {
+            // Odak bittiğinde
+            if (settings?.sound !== false && settings?.doneSound !== false) {
+              playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
+            }
+            if (window.Notification && Notification.permission === "granted") {
+              new Notification("🎯 Odak Süresi Bitti!", { body: "Harika bir iş çıkardın, şimdi mola zamanı!" });
+            }
           }
 
           const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
@@ -908,11 +912,14 @@ function FocusScreen() {
           setActivityStats(prev => { const c = prev[activeActivity] || { mins:0, count:0 }; return { ...prev, [activeActivity]:{ mins:c.mins+activeWork, count:c.count+1 } }; });
           
           setPhase("done");
-        } else {
-          // Mola bittiğinde 2 defa çal
+                } else {
           if (settings?.sound !== false) {
             playAudio("ping", settings?.volume || 100, 2);
           }
+          if (window.Notification && Notification.permission === "granted") {
+            new Notification("☕ Mola Bitti!", { body: "Dinlendiysen tekrar odaklanma zamanı!" });
+          }
+        }
           // Ekranı "idle" yapmadan önce çok kısa bir bekleme (sesin başlaması için)
           setTimeout(() => {
             setPhase("idle"); 
@@ -3035,14 +3042,14 @@ ${settings.animations === false ? "* { animation: none !important; transition: n
           </span>
         </div>
 
-        {screen === "home"      && <HomeScreen setScreen={setScreen} />}
-        {screen === "base"      && <BaseScreen />}
-        {screen === "focus"     && <FocusScreen />}
-        {screen === "habits"    && <HabitsScreen />}
-        {screen === "mind"      && <MindScreen />}
-        {screen === "analytics" && <AnalyticsScreen />}
-        {screen === "quests"    && <QuestsScreen />}
-        {screen === "settings"  && <SettingsScreen />}
+        <div style={{ display: screen === "home" ? "block" : "none" }}><HomeScreen setScreen={setScreen} /></div>
+        <div style={{ display: screen === "base" ? "block" : "none" }}><BaseScreen /></div>
+        <div style={{ display: screen === "focus" ? "block" : "none" }}><FocusScreen /></div>
+        <div style={{ display: screen === "habits" ? "block" : "none" }}><HabitsScreen /></div>
+        <div style={{ display: screen === "mind" ? "block" : "none" }}><MindScreen /></div>
+        <div style={{ display: screen === "analytics" ? "block" : "none" }}><AnalyticsScreen /></div>
+        <div style={{ display: screen === "quests" ? "block" : "none" }}><QuestsScreen /></div>
+        <div style={{ display: screen === "settings" ? "block" : "none" }}><SettingsScreen /></div>
 
         <NavBar screen={screen} setScreen={setScreen} points={points} />
       </div>
