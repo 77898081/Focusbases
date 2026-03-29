@@ -879,7 +879,7 @@ function FocusScreen() {
   const todaySessions = history.filter(h => h.date === new Date().toDateString());
   const todayMins     = todaySessions.reduce((s, h) => s + (h.min || 0), 0);
 
-  // ── Timer (Mola Sesi ve Çift Bip Güncellemesi) ────────────────
+    // ── Timer (Mola Sesi ve Çift Bip Güncellemesi) ────────────────
   useEffect(() => {
     if (phase !== "work" && phase !== "break") return;
     iRef.current = setInterval(() => {
@@ -888,16 +888,15 @@ function FocusScreen() {
         
         clearInterval(iRef.current);
         
-                  if (phase === "work") {
-            // Odak bittiğinde
-            if (settings?.sound !== false && settings?.doneSound !== false) {
-              playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
-            }
-            if (window.Notification && Notification.permission === "granted") {
-              new Notification("🎯 Odak Süresi Bitti!", { body: "Harika bir iş çıkardın, şimdi mola zamanı!" });
-            }
+        if (phase === "work") {
+          // Odak bittiğinde
+          if (settings?.sound !== false && settings?.doneSound !== false) {
+            playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
           }
-
+          if (window.Notification && Notification.permission === "granted") {
+            new Notification("🎯 Odak Süresi Bitti!", { body: "Harika bir iş çıkardın, şimdi mola zamanı!" });
+          }
+          
           const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
           const diffMult   = difficulty === 3 ? 1.5 : difficulty === 2 ? 1.2 : 1.0;
           const pts        = Math.floor((basePts + (bfx.focusBonus || 0)) * diffMult);
@@ -912,15 +911,16 @@ function FocusScreen() {
           setActivityStats(prev => { const c = prev[activeActivity] || { mins:0, count:0 }; return { ...prev, [activeActivity]:{ mins:c.mins+activeWork, count:c.count+1 } }; });
           
           setPhase("done");
-                } else {
+        } else {
+          // Mola bittiğinde
           if (settings?.sound !== false) {
             playAudio("ping", settings?.volume || 100, 2);
           }
           if (window.Notification && Notification.permission === "granted") {
             new Notification("☕ Mola Bitti!", { body: "Dinlendiysen tekrar odaklanma zamanı!" });
           }
-        }
-          // Ekranı "idle" yapmadan önce çok kısa bir bekleme (sesin başlaması için)
+          
+          // Ekranı "idle" yapmadan önce çok kısa bir bekleme
           setTimeout(() => {
             setPhase("idle"); 
             setSecs(workMin * 60);
