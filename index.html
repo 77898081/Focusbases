@@ -888,7 +888,7 @@ function FocusScreen() {
     return () => clearInterval(iRef.current);
   }, [phase]);
 
-  // ── Sayacın 0 Olmasını Bekleyen Zeki Gözlemci ────────────────
+    // ── Sayacın 0 Olmasını Bekleyen Zeki Gözlemci ────────────────
   useEffect(() => {
     if (secs === 0 && phase === "work") {
       clearInterval(iRef.current);
@@ -896,9 +896,13 @@ function FocusScreen() {
       if (settings?.sound !== false && settings?.doneSound !== false) {
         playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
       }
-      if (window.Notification && Notification.permission === "granted") {
-        new Notification("🎯 Odak Süresi Bitti!", { body: "Harika bir iş çıkardın, şimdi mola zamanı!" });
-      }
+      
+     // 🛡️ Mobil Çökme Engelleyici Zırh (Sorun buradaydı!)
+      try {
+        if (typeof window !== "undefined" && window.Notification && Notification.permission === "granted") {
+          new Notification("🎯 Odak Süresi Bitti!", { body: "Harika bir iş çıkardın, şimdi mola zamanı!" });
+        }
+      } catch (err) { console.log("Mobil bildirim desteklenmiyor, çökme önlendi."); }
       
       const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
       const diffMult   = difficulty === 3 ? 1.5 : difficulty === 2 ? 1.2 : 1.0;
@@ -910,7 +914,7 @@ function FocusScreen() {
       setTotalFocus(tf => tf + activeWork);
       setCombo(c => c + 1);
       const now = new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour:"2-digit", minute:"2-digit" });
-      setHistory(h => [{ min:activeWork, at:now, date:new Date().toDateString(), activity:activeActivity, topic:activeTopic, difficulty, pts, xp:xpEarned }, ...h.slice(0, 49)]);
+      setHistory(h => [{ min:activeWork, at:now, date:new Date().toDateString(), activity:activeActivity, topic:activeTopic, difficulty, pts, xp:xpEarned }, ...(h||[]).slice(0, 49)]);
       setActivityStats(prev => { const c = prev[activeActivity] || { mins:0, count:0 }; return { ...prev, [activeActivity]:{ mins:c.mins+activeWork, count:c.count+1 } }; });
       
       setPhase("done");
@@ -921,9 +925,13 @@ function FocusScreen() {
       if (settings?.sound !== false) {
         playAudio("ping", settings?.volume || 100, 2);
       }
-      if (window.Notification && Notification.permission === "granted") {
-        new Notification("☕ Mola Bitti!", { body: "Dinlendiysen tekrar odaklanma zamanı!" });
-      }
+      
+      // 🛡️ Mobil Çökme Engelleyici Zırh
+      try {
+        if (typeof window !== "undefined" && window.Notification && Notification.permission === "granted") {
+          new Notification("☕ Mola Bitti!", { body: "Dinlendiysen tekrar odaklanma zamanı!" });
+        }
+      } catch (err) { console.log("Mobil bildirim desteklenmiyor, çökme önlendi."); }
       
       setTimeout(() => {
         setPhase("idle"); 
