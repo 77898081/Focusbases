@@ -879,58 +879,58 @@ function FocusScreen() {
   const todaySessions = history.filter(h => h.date === new Date().toDateString());
   const todayMins     = todaySessions.reduce((s, h) => s + (h.min || 0), 0);
 
-    // ── Timer (Mola Sesi ve Çift Bip Güncellemesi) ────────────────
+     // ── Timer (Mola Sesi ve Çift Bip Güncellemesi) ────────────────
   useEffect(() => {
     if (phase !== "work" && phase !== "break") return;
     iRef.current = setInterval(() => {
-      setSecs(s => {
-        if (s > 1) return s - 1;
-        
-        clearInterval(iRef.current);
-        
-        if (phase === "work") {
-          // Odak bittiğinde
-          if (settings?.sound !== false && settings?.doneSound !== false) {
-            playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
-          }
-          if (window.Notification && Notification.permission === "granted") {
-            new Notification("🎯 Odak Süresi Bitti!", { body: "Harika bir iş çıkardın, şimdi mola zamanı!" });
-          }
-          
-          const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
-          const diffMult   = difficulty === 3 ? 1.5 : difficulty === 2 ? 1.2 : 1.0;
-          const pts        = Math.floor((basePts + (bfx.focusBonus || 0)) * diffMult);
-          const xpEarned   = Math.floor((pts / 2) * (1 + (bfx.xpMultiplier || 0))) + (bfx.xpFlat || 0);
-          
-          addPoints(pts); addXP(xpEarned);
-          setSessions(n => n + 1);
-          setTotalFocus(tf => tf + activeWork);
-          setCombo(c => c + 1);
-          const now = new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour:"2-digit", minute:"2-digit" });
-          setHistory(h => [{ min:activeWork, at:now, date:new Date().toDateString(), activity:activeActivity, topic:activeTopic, difficulty, pts, xp:xpEarned }, ...h.slice(0, 49)]);
-          setActivityStats(prev => { const c = prev[activeActivity] || { mins:0, count:0 }; return { ...prev, [activeActivity]:{ mins:c.mins+activeWork, count:c.count+1 } }; });
-          
-          setPhase("done");
-        } else {
-          // Mola bittiğinde
-          if (settings?.sound !== false) {
-            playAudio("ping", settings?.volume || 100, 2);
-          }
-          if (window.Notification && Notification.permission === "granted") {
-            new Notification("☕ Mola Bitti!", { body: "Dinlendiysen tekrar odaklanma zamanı!" });
-          }
-          
-          // Ekranı "idle" yapmadan önce çok kısa bir bekleme
-          setTimeout(() => {
-            setPhase("idle"); 
-            setSecs(workMin * 60);
-          }, 100);
-        }
-        return 0;
-      });
+      setSecs(s => s > 0 ? s - 1 : 0); // Sadece sayacı düşürür, başka işe karışmaz
     }, 1000);
     return () => clearInterval(iRef.current);
-  }, [phase, activeWork, activeBreak, settings, workMin]);
+  }, [phase]);
+
+  // ── Sayacın 0 Olmasını Bekleyen Zeki Gözlemci ────────────────
+  useEffect(() => {
+    if (secs === 0 && phase === "work") {
+      clearInterval(iRef.current);
+      // Odak bittiğinde
+      if (settings?.sound !== false && settings?.doneSound !== false) {
+        playAudio(settings?.soundType || "bell", settings?.volume || 100, 2);
+      }
+      if (window.Notification && Notification.permission === "granted") {
+        new Notification("🎯 Odak Süresi Bitti!", { body: "Harika bir iş çıkardın, şimdi mola zamanı!" });
+      }
+      
+      const basePts    = activeWork >= 45 ? 40 : activeWork >= 25 ? 25 : 12;
+      const diffMult   = difficulty === 3 ? 1.5 : difficulty === 2 ? 1.2 : 1.0;
+      const pts        = Math.floor((basePts + (bfx.focusBonus || 0)) * diffMult);
+      const xpEarned   = Math.floor((pts / 2) * (1 + (bfx.xpMultiplier || 0))) + (bfx.xpFlat || 0);
+      
+      addPoints(pts); addXP(xpEarned);
+      setSessions(n => n + 1);
+      setTotalFocus(tf => tf + activeWork);
+      setCombo(c => c + 1);
+      const now = new Date().toLocaleTimeString(lang === "tr" ? "tr-TR" : "en-US", { hour:"2-digit", minute:"2-digit" });
+      setHistory(h => [{ min:activeWork, at:now, date:new Date().toDateString(), activity:activeActivity, topic:activeTopic, difficulty, pts, xp:xpEarned }, ...h.slice(0, 49)]);
+      setActivityStats(prev => { const c = prev[activeActivity] || { mins:0, count:0 }; return { ...prev, [activeActivity]:{ mins:c.mins+activeWork, count:c.count+1 } }; });
+      
+      setPhase("done");
+      
+    } else if (secs === 0 && phase === "break") {
+      clearInterval(iRef.current);
+      // Mola bittiğinde
+      if (settings?.sound !== false) {
+        playAudio("ping", settings?.volume || 100, 2);
+      }
+      if (window.Notification && Notification.permission === "granted") {
+        new Notification("☕ Mola Bitti!", { body: "Dinlendiysen tekrar odaklanma zamanı!" });
+      }
+      
+      setTimeout(() => {
+        setPhase("idle"); 
+        setSecs(workMin * 60);
+      }, 100);
+    }
+  }, [secs, phase]); // Saniye her değiştiğinde kontrol eder
 
   // ── Breathing ─────────────────────────────────────────────────
   useEffect(() => {
