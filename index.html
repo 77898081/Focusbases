@@ -2061,14 +2061,14 @@ function SettingsScreen() {
         <SettingsToggle T={T} icon="🌟" label="Yıldız Arka Planı" value={settings.starsBg!==false} onToggle={()=>tog("starsBg")} desc="Karanlık modda arka plan yıldızları" />
       </SettingsSection>
 
-      {/* 2 - Odak Ayarları */}
-        <SettingsSection {...SP} id="focus" title={lang === "tr" ? "ODAK AYARLARI" : "FOCUS SETTINGS"} emoji="⏱️">
-          <SettingsSlider T={T} label={lang === "tr" ? "Varsayılan Odak Süresi" : "Default Focus Time"} icon="🎯" min={5} max={120} step={5} value={settings.defaultWork||25} onChange={v=>set("defaultWork",v)} />
-          <SettingsSlider T={T} label={lang === "tr" ? "Varsayılan Mola Süresi" : "Default Break Time"} icon="☕" min={1} max={30} step={1} value={settings.defaultBreak||5} onChange={v=>set("defaultBreak",v)} />
-          <SettingsSlider T={T} label={lang === "tr" ? "Günlük Odak Hedefi" : "Daily Focus Goal"} icon="🎯" min={30} max={480} step={30} value={settings.dailyGoal||120} onChange={v=>set("dailyGoal",v)} />
-          <SettingsToggle T={T} icon="💡" label={lang === "tr" ? "Seans Öncesi İlham" : "Pre-Session Quote"} value={settings.quoteOnStart!==false} onToggle={()=>tog("quoteOnStart")} desc={lang === "tr" ? "Timer başlamadan motivasyon sözü gösterir." : "Shows motivational quote before timer."} />
-          <SettingsToggle T={T} icon="☕" label={t.autoBreak || (lang === "tr" ? "Otomatik Mola" : "Auto-Start Break")} value={!!settings.autoBreak} onToggle={()=>tog("autoBreak")} desc={lang === "tr" ? "Seans bitince mola otomatik başlar" : "Automatically starts break when session ends"} />
-          <SettingsToggle T={T} icon="🔁" label={t.infinite || (lang === "tr" ? "Sonsuz Döngü" : "Infinite Loop")} value={!!settings.loopMode} onToggle={()=>tog("loopMode")} desc={lang === "tr" ? "Mola bitince yeni seans otomatik başlar" : "Automatically starts new session when break ends"} />
+        {/* 2 - Odak Ayarları (Çökmeye Karşı Korumalı) */}
+        <SettingsSection {...SP} id="focus" title={(settings.lang || "tr") === "tr" ? "ODAK AYARLARI" : "FOCUS SETTINGS"} emoji="⏱️">
+          <SettingsSlider T={T} label={(settings.lang || "tr") === "tr" ? "Varsayılan Odak Süresi" : "Default Focus Time"} icon="🎯" min={5} max={120} step={5} value={settings.defaultWork||25} onChange={v=>set("defaultWork",v)} />
+          <SettingsSlider T={T} label={(settings.lang || "tr") === "tr" ? "Varsayılan Mola Süresi" : "Default Break Time"} icon="☕" min={1} max={30} step={1} value={settings.defaultBreak||5} onChange={v=>set("defaultBreak",v)} />
+          <SettingsSlider T={T} label={(settings.lang || "tr") === "tr" ? "Günlük Odak Hedefi" : "Daily Focus Goal"} icon="🎯" min={30} max={480} step={30} value={settings.dailyGoal||120} onChange={v=>set("dailyGoal",v)} />
+          <SettingsToggle T={T} icon="💡" label={(settings.lang || "tr") === "tr" ? "Seans Öncesi İlham" : "Pre-Session Quote"} value={settings.quoteOnStart!==false} onToggle={()=>tog("quoteOnStart")} desc={(settings.lang || "tr") === "tr" ? "Timer başlamadan motivasyon sözü gösterir." : "Shows motivational quote before timer."} />
+          <SettingsToggle T={T} icon="☕" label={(settings.lang || "tr") === "tr" ? "Otomatik Mola" : "Auto-Start Break"} value={!!settings.autoBreak} onToggle={()=>tog("autoBreak")} desc={(settings.lang || "tr") === "tr" ? "Seans bitince mola otomatik başlar" : "Automatically starts break when session ends"} />
+          <SettingsToggle T={T} icon="🔁" label={(settings.lang || "tr") === "tr" ? "Sonsuz Döngü" : "Infinite Loop"} value={!!settings.loopMode} onToggle={()=>tog("loopMode")} desc={(settings.lang || "tr") === "tr" ? "Mola bitince yeni seans otomatik başlar" : "Automatically starts new session when break ends"} />
         </SettingsSection>
 
       {/* 3 — Ses & Titreşim */}
